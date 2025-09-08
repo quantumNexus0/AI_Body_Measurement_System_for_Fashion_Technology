@@ -50,8 +50,8 @@ BodyFit AI is an advanced computer vision system that uses artificial intelligen
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/bodyfit-ai-measurement-system.git
-   cd bodyfit-ai-measurement-system
+   git clone https://github.com/quantumNexus0/AI_Body_Measurement_System_for_Fashion_Technology.git
+   cd AI_Body_Measurement_System_for_Fashion_Technology
    ```
 
 2. **Install dependencies**
@@ -402,9 +402,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/bodyfit-ai-measurement-system/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/bodyfit-ai-measurement-system/discussions)
-- **Email**: support@bodyfit-ai.com
+- **Issues**: [GitHub Issues](https://github.com/quantumNexus0/AI_Body_Measurement_System_for_Fashion_Technology/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/quantumNexus0/AI_Body_Measurement_System_for_Fashion_Technology/discussions)
+- **Email**: vipulyadav503@gmail.com
 
 ---
 
