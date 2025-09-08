@@ -87,19 +87,19 @@ git commit -m "Initial commit: BodyFit AI Measurement System"
 
 ### 2.1 Create GitHub Repository
 
-1. Go to [GitHub.com](https://github.com)
+1. Go to [GitHub.com](https://github.com/quantumNexus0/AI_Body_Measurement_System_for_Fashion_Technology.git)
 2. Click the **"+"** icon in the top right
 3. Select **"New repository"**
 4. Fill in repository details:
-   - **Repository name**: `bodyfit-ai-measurement-system`
+   - **Repository name**: `AI_Body_Measurement_System_for_Fashion_Technology`
    - **Description**: `AI-powered body measurement system for fashion technology`
-   - **Visibility**: Public or Private (your choice)
-   - **Don't** initialize with README (we already have one)
+   - **Visibility**: Public or Private 
+   - **Don't** initialize with README 
 
 ### 2.2 Connect Local Repository to GitHub
 ```bash
-# Add GitHub remote (replace YOUR_USERNAME with your GitHub username)
-git remote add origin https://github.com/YOUR_USERNAME/bodyfit-ai-measurement-system.git
+# Add GitHub remote 
+git remote add origin https://github.com/quantumNexus0/AI_Body_Measurement_System_for_Fashion_Technology.git
 
 # Push to GitHub
 git branch -M main
@@ -455,7 +455,7 @@ Your BodyFit AI Measurement System is now deployed and accessible worldwide!
 ### Useful Links:
 - **Frontend**: https://your-app.vercel.app
 - **Backend**: https://your-api.railway.app
-- **Repository**: https://github.com/yourusername/bodyfit-ai-measurement-system
+- **Repository**:[quantumNexus0/AI_Body_Measurement_System_for_Fashion_Technology](https://github.com/quantumNexus0/AI_Body_Measurement_System_for_Fashion_Technology.git)
 - **Documentation**: Your README.md file
 
 ---
