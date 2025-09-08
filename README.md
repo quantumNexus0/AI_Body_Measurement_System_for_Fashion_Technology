@@ -403,7 +403,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/quantumNexus0/AI_Body_Measurement_System_for_Fashion_Technology/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/quantumNexus0/AI_Body_Measurement_System_for_Fashion_Technology/discussions)
 - **Email**: vipulyadav503@gmail.com
 
 ---
