@@ -37,8 +37,8 @@ Thank you for your interest in contributing to BodyFit AI! This document provide
 ### Local Development
 ```bash
 # Clone your fork
-git clone https://github.com/yourusername/bodyfit-ai-measurement-system.git
-cd bodyfit-ai-measurement-system
+git clone https://github.com/quantumNexus0/AI_Body_Measurement_System_for_Fashion_Technology.git
+cd AI_Body_Measurement_System_for_Fashion_Technology
 
 # Install dependencies
 npm install
