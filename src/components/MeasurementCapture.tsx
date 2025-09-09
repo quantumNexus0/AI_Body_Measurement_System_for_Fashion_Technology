@@ -1,8 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Upload, User, Ruler as Ruler2, CheckCircle2 } from 'lucide-react';
+import { Camera, Upload, User, Ruler as Ruler2, CheckCircle2, Layers, Users, TrendingUp, Download } from 'lucide-react';
 import CameraCapture from './CameraCapture';
 import ImageUpload from './ImageUpload';
+import DepthCameraCapture from './DepthCameraCapture';
+import MultiplePoseCapture from './MultiplePoseCapture';
 import CalibrationModal from './CalibrationModal';
+import ClothingRecommendations from './ClothingRecommendations';
+import ProgressTracking from './ProgressTracking';
+import ExportOptions from './ExportOptions';
 import MeasurementProcessor from '../utils/MeasurementProcessor';
 
 interface CalibrationData {
@@ -13,13 +18,14 @@ interface CalibrationData {
 }
 
 const MeasurementCapture: React.FC = () => {
-  const [captureMethod, setCaptureMethod] = useState<'camera' | 'upload'>('camera');
+  const [captureMethod, setCaptureMethod] = useState<'camera' | 'upload' | '3d' | 'multipose'>('camera');
   const [currentImage, setCurrentImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showCalibration, setShowCalibration] = useState(false);
   const [calibrationData, setCalibrationData] = useState<CalibrationData | null>(null);
   const [measurements, setMeasurements] = useState<any>(null);
   const [processingStep, setProcessingStep] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'capture' | 'recommendations' | 'progress' | 'export'>('capture');
 
   const measurementProcessor = useRef(new MeasurementProcessor());
 
@@ -94,15 +100,44 @@ const MeasurementCapture: React.FC = () => {
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Get Your Perfect Body Measurements
+          Advanced AI Body Measurement System
         </h2>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Use AI-powered computer vision to get accurate body measurements for custom clothing design. 
-          Simply capture or upload a photo and let our technology do the rest.
+          Experience next-generation body measurement technology with 3D scanning, multiple pose analysis, 
+          clothing recommendations, and progress tracking.
         </p>
       </div>
 
-      {!currentImage && (
+      {/* Navigation Tabs */}
+      <div className="flex justify-center mb-8">
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          {[
+            { id: 'capture', name: 'Capture', icon: Camera },
+            { id: 'recommendations', name: 'Recommendations', icon: User },
+            { id: 'progress', name: 'Progress', icon: TrendingUp },
+            { id: 'export', name: 'Export', icon: Download }
+          ].map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-teal-500 text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{tab.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Capture Tab */}
+      {activeTab === 'capture' && !currentImage && (
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
           <div className="flex justify-center mb-6">
             <div className="flex bg-gray-100 rounded-lg p-1">
@@ -128,18 +163,50 @@ const MeasurementCapture: React.FC = () => {
                 <Upload className="w-4 h-4" />
                 <span>Upload</span>
               </button>
+              <button
+                onClick={() => setCaptureMethod('3d')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
+                  captureMethod === '3d'
+                    ? 'bg-teal-500 text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Layers className="w-4 h-4" />
+                <span>3D Scan</span>
+              </button>
+              <button
+                onClick={() => setCaptureMethod('multipose')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
+                  captureMethod === 'multipose'
+                    ? 'bg-teal-500 text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <span>Multi-Pose</span>
+              </button>
             </div>
           </div>
 
-          {captureMethod === 'camera' ? (
+          {captureMethod === 'camera' && (
             <CameraCapture onCapture={handleImageCapture} />
-          ) : (
+          )}
+          {captureMethod === 'upload' && (
             <ImageUpload onUpload={handleImageCapture} />
+          )}
+          {captureMethod === '3d' && (
+            <DepthCameraCapture onCapture={handleImageCapture} />
+          )}
+          {captureMethod === 'multipose' && (
+            <MultiplePoseCapture onCapture={(poses) => {
+              // Use the front pose as the main image
+              handleImageCapture(poses.front);
+            }} />
           )}
         </div>
       )}
 
-      {isProcessing && (
+      {activeTab === 'capture' && isProcessing && (
         <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-100 rounded-full mb-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
@@ -152,7 +219,7 @@ const MeasurementCapture: React.FC = () => {
         </div>
       )}
 
-      {measurements && (
+      {activeTab === 'capture' && measurements && (
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <div className="flex items-center space-x-3 mb-6">
             <CheckCircle2 className="w-8 h-8 text-green-500" />
@@ -191,7 +258,57 @@ const MeasurementCapture: React.FC = () => {
               <Ruler2 className="w-4 h-4" />
               <span>Copy Results</span>
             </button>
+            <button
+              onClick={() => setActiveTab('recommendations')}
+              className="flex items-center space-x-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              <User className="w-4 h-4" />
+              <span>Get Recommendations</span>
+            </button>
           </div>
+        </div>
+      )}
+
+      {/* Clothing Recommendations Tab */}
+      {activeTab === 'recommendations' && measurements && (
+        <ClothingRecommendations measurements={measurements} />
+      )}
+
+      {/* Progress Tracking Tab */}
+      {activeTab === 'progress' && (
+        <ProgressTracking 
+          currentMeasurements={measurements}
+          onAddRecord={(record) => {
+            console.log('New record added:', record);
+          }}
+        />
+      )}
+
+      {/* Export Options Tab */}
+      {activeTab === 'export' && measurements && (
+        <ExportOptions 
+          measurements={measurements}
+          progressData={[]}
+          recommendations={[]}
+        />
+      )}
+
+      {/* Show message if no measurements for certain tabs */}
+      {(activeTab === 'recommendations' || activeTab === 'export') && !measurements && (
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+            <Ruler2 className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">No Measurements Available</h3>
+          <p className="text-gray-600 mb-4">
+            Please capture your body measurements first to access {activeTab === 'recommendations' ? 'clothing recommendations' : 'export options'}.
+          </p>
+          <button
+            onClick={() => setActiveTab('capture')}
+            className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
+          >
+            Start Measurement
+          </button>
         </div>
       )}
 
