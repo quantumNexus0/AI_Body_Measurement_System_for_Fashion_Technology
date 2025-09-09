@@ -534,10 +534,10 @@ const recommendations = await client.getRecommendations({
 - **Code Contributions**: Contribute to development
 
 ### Contact Information
-- **Website**: https://bodyfit-ai.com
-- **Email**: support@bodyfit-ai.com
-- **GitHub**: https://github.com/bodyfit-ai
-- **Discord**: https://discord.gg/bodyfit-ai
+
+- **Email**: vipulyadav503@gmail.com
+- **GitHub**: https://github.com/quantumNexus0
+
 
 ---
 
