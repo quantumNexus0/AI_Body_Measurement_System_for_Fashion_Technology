@@ -271,16 +271,16 @@ Visit BodyFit AI: https://bodyfit-ai.com
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-8">
-      <div className="flex items-center space-x-3 mb-6">
+    <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
+      <div className="flex items-center space-x-3 mb-4 sm:mb-6">
         <Download className="w-8 h-8 text-teal-600" />
-        <h3 className="text-2xl font-bold text-gray-900">Export & Share</h3>
+        <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Export & Share</h3>
       </div>
 
       {/* Export Format Selection */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-3">Export Format:</label>
-        <div className="flex space-x-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {[
             { id: 'pdf', name: 'PDF Report', icon: FileText, description: 'Professional report with charts' },
             { id: 'csv', name: 'CSV Data', icon: Table, description: 'Spreadsheet compatible format' },
@@ -291,7 +291,7 @@ Visit BodyFit AI: https://bodyfit-ai.com
               <button
                 key={format.id}
                 onClick={() => setExportFormat(format.id as any)}
-                className={`flex-1 p-4 rounded-lg border-2 transition-all ${
+                className={`p-3 sm:p-4 rounded-lg border-2 transition-all ${
                   exportFormat === format.id
                     ? 'border-teal-500 bg-teal-50'
                     : 'border-gray-200 hover:border-gray-300'
@@ -300,7 +300,7 @@ Visit BodyFit AI: https://bodyfit-ai.com
                 <Icon className={`w-6 h-6 mx-auto mb-2 ${
                   exportFormat === format.id ? 'text-teal-600' : 'text-gray-400'
                 }`} />
-                <div className="text-sm font-medium text-gray-900">{format.name}</div>
+                <div className="text-sm sm:text-base font-medium text-gray-900">{format.name}</div>
                 <div className="text-xs text-gray-500 mt-1">{format.description}</div>
               </button>
             );
@@ -309,11 +309,11 @@ Visit BodyFit AI: https://bodyfit-ai.com
       </div>
 
       {/* Export Button */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <button
           onClick={handleExport}
           disabled={isExporting}
-          className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isExporting ? (
             <>
@@ -330,47 +330,47 @@ Visit BodyFit AI: https://bodyfit-ai.com
       </div>
 
       {/* Quick Actions */}
-      <div className="border-t border-gray-200 pt-6">
-        <h4 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="border-t border-gray-200 pt-4 sm:pt-6">
+        <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Quick Actions</h4>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <button
             onClick={printResults}
-            className="flex flex-col items-center space-y-2 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+            className="flex flex-col items-center space-y-2 p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <Printer className="w-6 h-6 text-gray-600" />
+            <Printer className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
             <span className="text-sm font-medium text-gray-700">Print</span>
           </button>
 
           <button
             onClick={sendEmail}
-            className="flex flex-col items-center space-y-2 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+            className="flex flex-col items-center space-y-2 p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <Mail className="w-6 h-6 text-gray-600" />
+            <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
             <span className="text-sm font-medium text-gray-700">Email</span>
           </button>
 
           <button
             onClick={shareResults}
-            className="flex flex-col items-center space-y-2 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+            className="flex flex-col items-center space-y-2 p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <Share2 className="w-6 h-6 text-gray-600" />
+            <Share2 className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
             <span className="text-sm font-medium text-gray-700">Share</span>
           </button>
 
           <button
             onClick={() => navigator.clipboard.writeText(JSON.stringify(measurements, null, 2))}
-            className="flex flex-col items-center space-y-2 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+            className="flex flex-col items-center space-y-2 p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <FileText className="w-6 h-6 text-gray-600" />
+            <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
             <span className="text-sm font-medium text-gray-700">Copy Data</span>
           </button>
         </div>
       </div>
 
       {/* Export History */}
-      <div className="mt-8 bg-gray-50 rounded-lg p-4">
-        <h5 className="font-medium text-gray-800 mb-2">Export Tips</h5>
-        <ul className="text-sm text-gray-600 space-y-1">
+      <div className="mt-6 sm:mt-8 bg-gray-50 rounded-lg p-3 sm:p-4">
+        <h5 className="font-medium text-gray-800 mb-2 text-sm sm:text-base">Export Tips</h5>
+        <ul className="text-xs sm:text-sm text-gray-600 space-y-1">
           <li>• PDF reports include charts and professional formatting</li>
           <li>• CSV files can be opened in Excel or Google Sheets</li>
           <li>• JSON format is perfect for importing into other applications</li>

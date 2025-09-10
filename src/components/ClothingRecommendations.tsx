@@ -236,21 +236,21 @@ const ClothingRecommendations: React.FC<ClothingRecommendationsProps> = ({ measu
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-8">
-      <div className="flex items-center space-x-3 mb-6">
+    <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
+      <div className="flex items-center space-x-3 mb-4 sm:mb-6">
         <ShoppingBag className="w-8 h-8 text-teal-600" />
-        <h3 className="text-2xl font-bold text-gray-900">Clothing Recommendations</h3>
+        <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Clothing Recommendations</h3>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div className="flex items-center space-x-2">
           <Filter className="w-4 h-4 text-gray-500" />
           <span className="text-sm font-medium text-gray-700">Category:</span>
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="flex-1 sm:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
           >
             {categories.map(category => (
               <option key={category.id} value={category.id}>{category.name}</option>
@@ -263,7 +263,7 @@ const ClothingRecommendations: React.FC<ClothingRecommendationsProps> = ({ measu
           <select
             value={selectedFit}
             onChange={(e) => setSelectedFit(e.target.value)}
-            className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="flex-1 sm:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
           >
             {fitTypes.map(fit => (
               <option key={fit.id} value={fit.id}>{fit.name}</option>
@@ -273,14 +273,14 @@ const ClothingRecommendations: React.FC<ClothingRecommendationsProps> = ({ measu
       </div>
 
       {/* Recommendations Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {filteredRecommendations.map(item => (
           <div key={item.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
             <div className="relative">
               <img 
                 src={item.image} 
                 alt={item.name}
-                className="w-full h-48 object-cover"
+                className="w-full h-40 sm:h-48 object-cover"
               />
               <div className="absolute top-2 right-2 bg-teal-500 text-white px-2 py-1 rounded-full text-xs font-medium">
                 {item.confidence}% Match
@@ -289,13 +289,13 @@ const ClothingRecommendations: React.FC<ClothingRecommendationsProps> = ({ measu
             
             <div className="p-4">
               <div className="flex items-start justify-between mb-2">
-                <h4 className="font-semibold text-gray-900 text-sm">{item.name}</h4>
-                <span className="text-teal-600 font-bold text-sm">{item.price}</span>
+                <h4 className="font-semibold text-gray-900 text-sm sm:text-base pr-2">{item.name}</h4>
+                <span className="text-teal-600 font-bold text-sm sm:text-base whitespace-nowrap">{item.price}</span>
               </div>
               
-              <p className="text-gray-600 text-xs mb-2">{item.brand}</p>
+              <p className="text-gray-600 text-xs sm:text-sm mb-2">{item.brand}</p>
               
-              <div className="flex items-center space-x-4 mb-3 text-xs text-gray-500">
+              <div className="flex items-center space-x-2 sm:space-x-4 mb-3 text-xs text-gray-500">
                 <span>{item.material}</span>
                 <span>{item.fit} Fit</span>
               </div>
@@ -314,8 +314,8 @@ const ClothingRecommendations: React.FC<ClothingRecommendationsProps> = ({ measu
               
               <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-teal-800">Recommended Size:</span>
-                  <span className="text-lg font-bold text-teal-600">{item.recommendedSize}</span>
+                  <span className="text-xs sm:text-sm font-medium text-teal-800">Recommended Size:</span>
+                  <span className="text-base sm:text-lg font-bold text-teal-600">{item.recommendedSize}</span>
                 </div>
                 <div className="flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 text-teal-500 mr-1" />
@@ -332,16 +332,16 @@ const ClothingRecommendations: React.FC<ClothingRecommendationsProps> = ({ measu
       </div>
 
       {filteredRecommendations.length === 0 && (
-        <div className="text-center py-8">
+        <div className="text-center py-6 sm:py-8">
           <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">No recommendations found for the selected filters.</p>
+          <p className="text-sm sm:text-base text-gray-500 px-4">No recommendations found for the selected filters.</p>
         </div>
       )}
 
       {/* Size Guide */}
-      <div className="mt-8 bg-gray-50 rounded-lg p-6">
-        <h4 className="font-semibold text-gray-900 mb-4">Size Guide Based on Your Measurements</h4>
-        <div className="grid md:grid-cols-2 gap-6 text-sm">
+      <div className="mt-6 sm:mt-8 bg-gray-50 rounded-lg p-4 sm:p-6">
+        <h4 className="font-semibold text-gray-900 mb-3 sm:mb-4 text-base sm:text-lg">Size Guide Based on Your Measurements</h4>
+        <div className="grid sm:grid-cols-2 gap-4 sm:gap-6 text-sm">
           <div>
             <h5 className="font-medium text-gray-800 mb-2">Shirts & Jackets</h5>
             <ul className="space-y-1 text-gray-600">
