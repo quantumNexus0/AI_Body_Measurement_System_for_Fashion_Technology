@@ -97,20 +97,20 @@ const MeasurementCapture: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="text-center mb-6 sm:mb-8">
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">
           Advanced AI Body Measurement System
         </h2>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+        <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
           Experience next-generation body measurement technology with 3D scanning, multiple pose analysis, 
           clothing recommendations, and progress tracking.
         </p>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex justify-center mb-8">
-        <div className="flex bg-gray-100 rounded-lg p-1">
+      <div className="flex justify-center mb-6 sm:mb-8 px-4">
+        <div className="flex bg-gray-100 rounded-lg p-1 overflow-x-auto">
           {[
             { id: 'capture', name: 'Capture', icon: Camera },
             { id: 'recommendations', name: 'Recommendations', icon: User },
@@ -122,14 +122,14 @@ const MeasurementCapture: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
+                className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-md transition-all whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-teal-500 text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <Icon className="w-4 h-4" />
-                <span>{tab.name}</span>
+                <span className="text-sm sm:text-base">{tab.name}</span>
               </button>
             );
           })}
@@ -138,52 +138,52 @@ const MeasurementCapture: React.FC = () => {
 
       {/* Capture Tab */}
       {activeTab === 'capture' && !currentImage && (
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <div className="flex justify-center mb-6">
-            <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 mb-6 sm:mb-8">
+          <div className="flex justify-center mb-4 sm:mb-6">
+            <div className="flex bg-gray-100 rounded-lg p-1 overflow-x-auto">
               <button
                 onClick={() => setCaptureMethod('camera')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
+                className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-md transition-all whitespace-nowrap ${
                   captureMethod === 'camera'
                     ? 'bg-teal-500 text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <Camera className="w-4 h-4" />
-                <span>Camera</span>
+                <span className="text-sm sm:text-base">Camera</span>
               </button>
               <button
                 onClick={() => setCaptureMethod('upload')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
+                className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-md transition-all whitespace-nowrap ${
                   captureMethod === 'upload'
                     ? 'bg-teal-500 text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <Upload className="w-4 h-4" />
-                <span>Upload</span>
+                <span className="text-sm sm:text-base">Upload</span>
               </button>
               <button
                 onClick={() => setCaptureMethod('3d')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
+                className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-md transition-all whitespace-nowrap ${
                   captureMethod === '3d'
                     ? 'bg-teal-500 text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <Layers className="w-4 h-4" />
-                <span>3D Scan</span>
+                <span className="text-sm sm:text-base">3D Scan</span>
               </button>
               <button
                 onClick={() => setCaptureMethod('multipose')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
+                className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-md transition-all whitespace-nowrap ${
                   captureMethod === 'multipose'
                     ? 'bg-teal-500 text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <Users className="w-4 h-4" />
-                <span>Multi-Pose</span>
+                <span className="text-sm sm:text-base">Multi-Pose</span>
               </button>
             </div>
           </div>
@@ -207,12 +207,12 @@ const MeasurementCapture: React.FC = () => {
       )}
 
       {activeTab === 'capture' && isProcessing && (
-        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+        <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-100 rounded-full mb-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Processing Your Image</h3>
-          <p className="text-gray-600 mb-4">{processingStep}</p>
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Processing Your Image</h3>
+          <p className="text-sm sm:text-base text-gray-600 mb-4">{processingStep}</p>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div className="bg-teal-500 h-2 rounded-full transition-all duration-1000 w-3/4"></div>
           </div>
@@ -220,20 +220,20 @@ const MeasurementCapture: React.FC = () => {
       )}
 
       {activeTab === 'capture' && measurements && (
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <div className="flex items-center space-x-3 mb-6">
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
+          <div className="flex items-center space-x-3 mb-4 sm:mb-6">
             <CheckCircle2 className="w-8 h-8 text-green-500" />
-            <h3 className="text-2xl font-bold text-gray-900">Your Body Measurements</h3>
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Your Body Measurements</h3>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4 sm:gap-8">
+            <div className="space-y-3 sm:space-y-4">
               <MeasurementItem label="Shoulder Width" value={measurements.shoulder_width} />
               <MeasurementItem label="Chest Circumference" value={measurements.chest} />
               <MeasurementItem label="Waist Circumference" value={measurements.waist} />
               <MeasurementItem label="Hip Circumference" value={measurements.hips} />
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <MeasurementItem label="Arm Length" value={measurements.arm_length} />
               <MeasurementItem label="Leg Length" value={measurements.leg_length} />
               <MeasurementItem label="Inseam" value={measurements.inseam} />
@@ -241,10 +241,10 @@ const MeasurementCapture: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-8 flex space-x-4">
+          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
             <button
               onClick={resetCapture}
-              className="flex items-center space-x-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
               <Camera className="w-4 h-4" />
               <span>New Measurement</span>
@@ -253,14 +253,14 @@ const MeasurementCapture: React.FC = () => {
               onClick={() => {
                 navigator.clipboard.writeText(JSON.stringify(measurements, null, 2));
               }}
-              className="flex items-center space-x-2 px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
+              className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
             >
               <Ruler2 className="w-4 h-4" />
               <span>Copy Results</span>
             </button>
             <button
               onClick={() => setActiveTab('recommendations')}
-              className="flex items-center space-x-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
               <User className="w-4 h-4" />
               <span>Get Recommendations</span>
@@ -295,17 +295,17 @@ const MeasurementCapture: React.FC = () => {
 
       {/* Show message if no measurements for certain tabs */}
       {(activeTab === 'recommendations' || activeTab === 'export') && !measurements && (
-        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+        <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
             <Ruler2 className="w-8 h-8 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No Measurements Available</h3>
-          <p className="text-gray-600 mb-4">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No Measurements Available</h3>
+          <p className="text-sm sm:text-base text-gray-600 mb-4 px-4">
             Please capture your body measurements first to access {activeTab === 'recommendations' ? 'clothing recommendations' : 'export options'}.
           </p>
           <button
             onClick={() => setActiveTab('capture')}
-            className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
+            className="px-4 sm:px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
           >
             Start Measurement
           </button>
@@ -323,9 +323,9 @@ const MeasurementCapture: React.FC = () => {
 };
 
 const MeasurementItem: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-    <span className="font-medium text-gray-700">{label}</span>
-    <span className="text-xl font-bold text-teal-600">{value}</span>
+  <div className="flex justify-between items-center p-3 sm:p-4 bg-gray-50 rounded-lg">
+    <span className="font-medium text-gray-700 text-sm sm:text-base">{label}</span>
+    <span className="text-lg sm:text-xl font-bold text-teal-600">{value}</span>
   </div>
 );
 

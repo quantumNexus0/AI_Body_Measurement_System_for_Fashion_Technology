@@ -212,15 +212,15 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
   const filteredRecords = getFilteredRecords();
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
         <div className="flex items-center space-x-3">
           <TrendingUp className="w-8 h-8 text-teal-600" />
-          <h3 className="text-2xl font-bold text-gray-900">Progress Tracking</h3>
+          <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Progress Tracking</h3>
         </div>
         <button
           onClick={() => setShowAddForm(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
+          className="flex items-center space-x-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors text-sm sm:text-base"
         >
           <Plus className="w-4 h-4" />
           <span>Add Record</span>
@@ -228,13 +228,13 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium text-gray-700">Metric:</span>
           <select
             value={selectedMetric}
             onChange={(e) => setSelectedMetric(e.target.value)}
-            className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="flex-1 sm:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
           >
             {metrics.map(metric => (
               <option key={metric.key} value={metric.key}>{metric.label}</option>
@@ -247,7 +247,7 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="flex-1 sm:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
           >
             {timeRanges.map(range => (
               <option key={range.key} value={range.key}>{range.label}</option>
@@ -258,24 +258,24 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
 
       {/* Progress Summary */}
       {change && selectedMetricData && (
-        <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg p-6 mb-8">
-          <div className="flex items-center justify-between">
+        <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
             <div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">
+              <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
                 {selectedMetricData.label} Progress
               </h4>
-              <div className="flex items-center space-x-4">
-                <div className="text-3xl font-bold text-teal-600">
+              <div className="flex items-center space-x-2 sm:space-x-4">
+                <div className="text-2xl sm:text-3xl font-bold text-teal-600">
                   {change.absolute > 0 ? '+' : ''}{change.absolute.toFixed(1)} {selectedMetricData.unit}
                 </div>
-                <div className={`text-lg font-medium ${
+                <div className={`text-base sm:text-lg font-medium ${
                   change.percentage > 0 ? 'text-red-500' : 'text-green-500'
                 }`}>
                   {change.percentage > 0 ? '+' : ''}{change.percentage.toFixed(1)}%
                 </div>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               <div className="text-sm text-gray-600">Over {timeRanges.find(r => r.key === timeRange)?.label}</div>
               <div className="text-sm text-gray-500">{filteredRecords.length} measurements</div>
             </div>
@@ -284,33 +284,33 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
       )}
 
       {/* Chart Visualization */}
-      <div className="bg-gray-50 rounded-lg p-6 mb-8">
+      <div className="bg-gray-50 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
         <div className="flex items-center space-x-2 mb-4">
           <BarChart3 className="w-5 h-5 text-gray-600" />
-          <h4 className="font-semibold text-gray-900">
+          <h4 className="font-semibold text-gray-900 text-base sm:text-lg">
             {selectedMetricData?.label} Trend
           </h4>
         </div>
         
-        <div className="relative h-64">
+        <div className="relative h-48 sm:h-64">
           {filteredRecords.length > 0 ? (
-            <div className="flex items-end justify-between h-full space-x-2">
+            <div className="flex items-end justify-between h-full space-x-1 sm:space-x-2">
               {filteredRecords.slice().reverse().map((record, index) => {
                 const value = record.measurements[selectedMetric];
                 const maxValue = Math.max(...filteredRecords.map(r => r.measurements[selectedMetric]));
                 const minValue = Math.min(...filteredRecords.map(r => r.measurements[selectedMetric]));
-                const height = ((value - minValue) / (maxValue - minValue)) * 200 + 20;
+                const height = ((value - minValue) / (maxValue - minValue)) * (window.innerWidth < 640 ? 150 : 200) + 20;
                 
                 return (
                   <div key={record.id} className="flex flex-col items-center flex-1">
-                    <div className="text-xs text-gray-600 mb-2 font-medium">
+                    <div className="text-xs text-gray-600 mb-1 sm:mb-2 font-medium">
                       {value.toFixed(1)}
                     </div>
                     <div
                       className="bg-teal-500 rounded-t-lg w-full transition-all duration-300 hover:bg-teal-600"
                       style={{ height: `${height}px` }}
                     ></div>
-                    <div className="text-xs text-gray-500 mt-2 transform -rotate-45 origin-left">
+                    <div className="text-xs text-gray-500 mt-1 sm:mt-2 transform -rotate-45 origin-left">
                       {new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </div>
                   </div>
@@ -318,7 +318,7 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
               })}
             </div>
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-500">
+            <div className="flex items-center justify-center h-full text-gray-500 text-sm sm:text-base px-4 text-center">
               No data available for the selected time range
             </div>
           )}
@@ -326,39 +326,39 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
       </div>
 
       {/* Records Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto -mx-4 sm:mx-0">
+        <table className="w-full text-xs sm:text-sm min-w-full">
           <thead>
             <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-4 font-medium text-gray-700">Date</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-700">Waist</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-700">Chest</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-700">Hips</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-700">Weight</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-700">Notes</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-700">Actions</th>
+              <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-medium text-gray-700">Date</th>
+              <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-medium text-gray-700">Waist</th>
+              <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-medium text-gray-700">Chest</th>
+              <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-medium text-gray-700 hidden sm:table-cell">Hips</th>
+              <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-medium text-gray-700 hidden sm:table-cell">Weight</th>
+              <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-medium text-gray-700 hidden md:table-cell">Notes</th>
+              <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-medium text-gray-700">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredRecords.map((record) => (
               <tr key={record.id} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-3 px-4">
+                <td className="py-2 sm:py-3 px-2 sm:px-4">
                   <div className="flex items-center space-x-2">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <span>{new Date(record.date).toLocaleDateString()}</span>
+                    <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+                    <span className="whitespace-nowrap">{new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                   </div>
                 </td>
-                <td className="py-3 px-4">{record.measurements.waist.toFixed(1)} cm</td>
-                <td className="py-3 px-4">{record.measurements.chest.toFixed(1)} cm</td>
-                <td className="py-3 px-4">{record.measurements.hips.toFixed(1)} cm</td>
-                <td className="py-3 px-4">{record.weight ? `${record.weight} kg` : '-'}</td>
-                <td className="py-3 px-4 max-w-xs truncate">{record.notes || '-'}</td>
-                <td className="py-3 px-4">
+                <td className="py-2 sm:py-3 px-2 sm:px-4">{record.measurements.waist.toFixed(1)}</td>
+                <td className="py-2 sm:py-3 px-2 sm:px-4">{record.measurements.chest.toFixed(1)}</td>
+                <td className="py-2 sm:py-3 px-2 sm:px-4 hidden sm:table-cell">{record.measurements.hips.toFixed(1)}</td>
+                <td className="py-2 sm:py-3 px-2 sm:px-4 hidden sm:table-cell">{record.weight ? `${record.weight}` : '-'}</td>
+                <td className="py-2 sm:py-3 px-2 sm:px-4 max-w-xs truncate hidden md:table-cell">{record.notes || '-'}</td>
+                <td className="py-2 sm:py-3 px-2 sm:px-4">
                   <button
                     onClick={() => deleteRecord(record.id)}
-                    className="text-red-500 hover:text-red-700 transition-colors"
+                    className="text-red-500 hover:text-red-700 transition-colors p-1"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                   </button>
                 </td>
               </tr>
@@ -370,17 +370,17 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
       {/* Add Record Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <h4 className="text-xl font-bold text-gray-900 mb-4">Add New Record</h4>
+          <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 max-h-screen overflow-y-auto">
+            <h4 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Add New Record</h4>
             
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                 <input
                   type="date"
                   value={newRecord.date}
                   onChange={(e) => setNewRecord({ ...newRecord, date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-base"
                 />
               </div>
               
@@ -391,7 +391,7 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
                   step="0.1"
                   value={newRecord.weight || ''}
                   onChange={(e) => setNewRecord({ ...newRecord, weight: parseFloat(e.target.value) || undefined })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-base"
                   placeholder="Optional"
                 />
               </div>
@@ -401,24 +401,24 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
                 <textarea
                   value={newRecord.notes}
                   onChange={(e) => setNewRecord({ ...newRecord, notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-base"
                   rows={3}
                   placeholder="Optional notes about this measurement..."
                 />
               </div>
             </div>
             
-            <div className="flex space-x-3 mt-6">
+            <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 mt-6">
               <button
                 onClick={() => setShowAddForm(false)}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={addRecord}
                 disabled={!currentMeasurements}
-                className="flex-1 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add Record
               </button>
@@ -428,7 +428,7 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
       )}
 
       {/* Export Button */}
-      <div className="flex justify-end mt-6">
+      <div className="flex justify-center sm:justify-end mt-6">
         <button
           onClick={() => {
             const csvContent = "data:text/csv;charset=utf-8," + 
@@ -445,7 +445,7 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
             link.click();
             document.body.removeChild(link);
           }}
-          className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm sm:text-base"
         >
           <Download className="w-4 h-4" />
           <span>Export CSV</span>

@@ -68,7 +68,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload }) => {
           <img 
             src={preview} 
             alt="Preview" 
-            className="max-w-full max-h-96 rounded-lg shadow-md"
+            className="max-w-full max-h-64 sm:max-h-96 rounded-lg shadow-md"
           />
           <button
             onClick={clearPreview}
@@ -78,16 +78,16 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload }) => {
           </button>
         </div>
         
-        <div className="mt-6 space-x-4">
+        <div className="mt-6 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
           <button
             onClick={clearPreview}
-            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            className="px-4 sm:px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
           >
             Choose Different Image
           </button>
           <button
             onClick={handleUseImage}
-            className="px-8 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
+            className="px-6 sm:px-8 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
           >
             Use This Image
           </button>
@@ -99,7 +99,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload }) => {
   return (
     <div className="text-center">
       <div
-        className={`border-2 border-dashed rounded-xl p-12 transition-colors ${
+        className={`border-2 border-dashed rounded-xl p-6 sm:p-12 transition-colors ${
           dragOver 
             ? 'border-teal-400 bg-teal-50' 
             : 'border-gray-300 hover:border-gray-400'
@@ -111,23 +111,23 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload }) => {
         }}
         onDragLeave={() => setDragOver(false)}
       >
-        <div className="flex flex-col items-center space-y-4">
-          <div className="p-4 bg-gray-100 rounded-full">
-            <Image className="w-8 h-8 text-gray-600" />
+        <div className="flex flex-col items-center space-y-3 sm:space-y-4">
+          <div className="p-3 sm:p-4 bg-gray-100 rounded-full">
+            <Image className="w-6 h-6 sm:w-8 sm:h-8 text-gray-600" />
           </div>
           
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
               Upload Your Photo
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-sm sm:text-base text-gray-600 mb-4 px-4">
               Drag and drop your image here, or click to browse
             </p>
           </div>
 
-          <label className="inline-flex items-center space-x-2 px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors cursor-pointer">
+          <label className="inline-flex items-center space-x-2 px-4 sm:px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors cursor-pointer">
             <Upload className="w-4 h-4" />
-            <span>Select Image</span>
+            <span className="text-sm sm:text-base">Select Image</span>
             <input
               type="file"
               accept="image/*"
@@ -138,9 +138,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload }) => {
         </div>
       </div>
 
-      <div className="mt-4 text-sm text-gray-600">
+      <div className="mt-4 text-xs sm:text-sm text-gray-600 px-4">
         <p>For best results:</p>
-        <ul className="list-disc list-inside space-y-1 mt-2">
+        <ul className="list-disc list-inside space-y-1 mt-2 text-left">
           <li>Ensure your full body is visible</li>
           <li>Stand against a plain background</li>
           <li>Wear form-fitting clothing</li>
