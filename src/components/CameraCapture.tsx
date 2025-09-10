@@ -101,8 +101,8 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
         {/* Camera overlay guide */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="border-2 border-white/50 rounded-lg w-64 h-80">
-        <div className="border-2 border-white/50 rounded-lg w-48 h-64 sm:w-64 sm:h-80">
-          <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-white/70 text-xs sm:text-sm text-center px-2">
+            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-white/70 text-sm">
+              Stand here for full body measurement
             </div>
           </div>
         </div>
@@ -110,10 +110,10 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
 
       <canvas ref={canvasRef} className="hidden" />
 
-      <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 mt-6">
+      <div className="flex justify-center space-x-4 mt-6">
         <button
           onClick={switchCamera}
-          className="flex items-center justify-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
           disabled={!isStreaming}
         >
           <RotateCcw className="w-4 h-4" />
@@ -122,7 +122,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
 
         <button
           onClick={capturePhoto}
-          className="flex items-center justify-center space-x-2 px-6 sm:px-8 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center space-x-2 px-8 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={!isStreaming}
         >
           <Zap className="w-5 h-5" />
@@ -130,7 +130,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
         </button>
       </div>
 
-      <div className="mt-4 text-center text-xs sm:text-sm text-gray-600 px-4">
+      <div className="mt-4 text-center text-sm text-gray-600">
         <p>Position yourself so your full body is visible in the frame</p>
         <p>Stand against a plain background for best results</p>
       </div>
@@ -139,4 +139,3 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
 };
 
 export default CameraCapture;
-  
