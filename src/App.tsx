@@ -8,9 +8,9 @@ import './index.css';
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-teal-50 selection:bg-teal-200 selection:text-teal-900">
         <Header />
-        <main className="container mx-auto px-4 py-4 sm:py-8">
+        <main className="container mx-auto px-4 py-6 sm:py-10 lg:py-12">
           <Routes>
             <Route path="/" element={<MeasurementCapture />} />
             <Route path="/results" element={<Results />} />

@@ -1,11 +1,12 @@
 import React, { useRef, useState, useCallback } from 'react';
-import { Camera, RotateCcw, Zap } from 'lucide-react';
+import { RotateCcw, Zap } from 'lucide-react';
 
 interface CameraCaptureProps {
   onCapture: (imageData: string) => void;
+  overlay?: React.ReactNode;
 }
 
-const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
+const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, overlay }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -88,32 +89,34 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
   }, [startCamera, stopCamera]);
 
   return (
-    <div className="relative">
-      <div className="relative bg-black rounded-xl overflow-hidden">
+    <div className="relative text-center">
+      {/* Optional UI overlay */}
+      {overlay}
+      <div className="relative bg-black rounded-xl overflow-hidden shadow-sm">
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          className="w-full h-auto max-h-96 object-cover"
+          className="w-full h-auto min-h-[60vh] sm:min-h-[75vh] object-cover"
         />
+        
+        
         
         {/* Camera overlay guide */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="border-2 border-white/50 rounded-lg w-64 h-80">
-            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-white/70 text-sm">
-              Stand here for full body measurement
-            </div>
+          <div className="border-2 border-white/40 rounded-lg w-3/4 max-w-sm aspect-[2/3] sm:aspect-[3/4]">
+            {/* Outline only */}
           </div>
         </div>
       </div>
 
       <canvas ref={canvasRef} className="hidden" />
 
-      <div className="flex justify-center space-x-4 mt-6">
+      <div className="flex justify-center space-x-3 mt-4 sm:mt-6">
         <button
           onClick={switchCamera}
-          className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          className="flex items-center space-x-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
           disabled={!isStreaming}
         >
           <RotateCcw className="w-4 h-4" />
@@ -122,17 +125,18 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
 
         <button
           onClick={capturePhoto}
-          className="flex items-center space-x-2 px-8 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center space-x-1 px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium shadow-sm"
           disabled={!isStreaming}
         >
-          <Zap className="w-5 h-5" />
+          <Zap className="w-4 h-4" />
           <span>Capture Photo</span>
         </button>
       </div>
+      <div className="mt-4 text-center text-xs sm:text-sm text-gray-700 px-4 bg-teal-50/50 py-3 rounded-xl border border-teal-100 shadow-sm max-w-md mx-auto">
+        <p className="font-bold mb-1 text-teal-800 uppercase tracking-tighter text-[10px]">Preparation Guide</p>
+        <p className="font-semibold text-gray-900 leading-tight mb-1">Stand inside the guide box for full body measurement.</p>
+        <p className="text-gray-600 leading-tight">Position yourself so your full body is visible in the frame. Stand against a plain background.</p>
 
-      <div className="mt-4 text-center text-sm text-gray-600">
-        <p>Position yourself so your full body is visible in the frame</p>
-        <p>Stand against a plain background for best results</p>
       </div>
     </div>
   );

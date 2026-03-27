@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Upload, User, Ruler as Ruler2, CheckCircle2, Layers, Users, TrendingUp, Download } from 'lucide-react';
+import { Camera, Upload, User, Ruler as Ruler2, CheckCircle2, TrendingUp, Download, Plus, X, Layers, Users } from 'lucide-react';
 import CameraCapture from './CameraCapture';
 import ImageUpload from './ImageUpload';
 import DepthCameraCapture from './DepthCameraCapture';
@@ -26,6 +26,8 @@ const MeasurementCapture: React.FC = () => {
   const [measurements, setMeasurements] = useState<any>(null);
   const [processingStep, setProcessingStep] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'capture' | 'recommendations' | 'progress' | 'export'>('capture');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCaptureMenuOpen, setIsCaptureMenuOpen] = useState(false);
 
   const measurementProcessor = useRef(new MeasurementProcessor());
 
@@ -98,142 +100,156 @@ const MeasurementCapture: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-6 sm:mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">
+      <div className="text-center mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">
           Advanced AI Body Measurement System
         </h2>
-        <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
+        <p className="text-sm sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
           Experience next-generation body measurement technology with 3D scanning, multiple pose analysis, 
           clothing recommendations, and progress tracking.
         </p>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex justify-center mb-6 sm:mb-8 px-4">
-        <div className="flex bg-gray-100 rounded-lg p-1 overflow-x-auto">
-          {[
-            { id: 'capture', name: 'Capture', icon: Camera },
-            { id: 'recommendations', name: 'Recommendations', icon: User },
-            { id: 'progress', name: 'Progress', icon: TrendingUp },
-            { id: 'export', name: 'Export', icon: Download }
-          ].map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-md transition-all whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'bg-teal-500 text-white shadow-md'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="text-sm sm:text-base">{tab.name}</span>
-              </button>
-            );
-          })}
-        </div>
+      {/* Floating Action Button Navigation (All Devices) */}
+      <div className="fixed bottom-6 right-6 sm:bottom-10 sm:right-10 z-50">
+        {isMobileMenuOpen && (
+          <div className="flex flex-col gap-3 mb-4 items-end animate-in slide-in-from-bottom-2 fade-in">
+            {[
+              { id: 'capture', name: 'Capture', icon: Camera },
+              { id: 'recommendations', name: 'Recommendations', icon: User },
+              { id: 'progress', name: 'Progress', icon: TrendingUp },
+              { id: 'export', name: 'Export', icon: Download }
+            ].map((tab) => {
+              if (activeTab === tab.id) return null;
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => { setActiveTab(tab.id as any); setIsMobileMenuOpen(false); }}
+                  className="flex items-center gap-3 bg-white p-3 rounded-full shadow-lg border border-gray-100 transition-all hover:bg-gray-50 active:bg-gray-100"
+                >
+                  <span className="font-semibold text-sm text-gray-700 pl-3">{tab.name}</span>
+                  <div className="bg-teal-50 p-2 text-teal-600 rounded-full">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="bg-gradient-to-r from-teal-500 to-indigo-500 text-white p-4 rounded-full shadow-2xl transition-transform hover:scale-105 active:scale-95 flex items-center justify-center border-4 border-white"
+        >
+          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
+        </button>
       </div>
 
       {/* Capture Tab */}
       {activeTab === 'capture' && !currentImage && (
-        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 mb-6 sm:mb-8">
-          <div className="flex justify-center mb-4 sm:mb-6">
-            <div className="flex bg-gray-100 rounded-lg p-1 overflow-x-auto">
-              <button
-                onClick={() => setCaptureMethod('camera')}
-                className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-md transition-all whitespace-nowrap ${
-                  captureMethod === 'camera'
-                    ? 'bg-teal-500 text-white shadow-md'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Camera className="w-4 h-4" />
-                <span className="text-sm sm:text-base">Camera</span>
-              </button>
-              <button
-                onClick={() => setCaptureMethod('upload')}
-                className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-md transition-all whitespace-nowrap ${
-                  captureMethod === 'upload'
-                    ? 'bg-teal-500 text-white shadow-md'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Upload className="w-4 h-4" />
-                <span className="text-sm sm:text-base">Upload</span>
-              </button>
-              <button
-                onClick={() => setCaptureMethod('3d')}
-                className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-md transition-all whitespace-nowrap ${
-                  captureMethod === '3d'
-                    ? 'bg-teal-500 text-white shadow-md'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Layers className="w-4 h-4" />
-                <span className="text-sm sm:text-base">3D Scan</span>
-              </button>
-              <button
-                onClick={() => setCaptureMethod('multipose')}
-                className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-md transition-all whitespace-nowrap ${
-                  captureMethod === 'multipose'
-                    ? 'bg-teal-500 text-white shadow-md'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Users className="w-4 h-4" />
-                <span className="text-sm sm:text-base">Multi-Pose</span>
-              </button>
-            </div>
-          </div>
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-slate-200/50 border border-white p-4 sm:p-10 mb-6 sm:mb-8 transition-all relative">
 
-          {captureMethod === 'camera' && (
-            <CameraCapture onCapture={handleImageCapture} />
-          )}
-          {captureMethod === 'upload' && (
-            <ImageUpload onUpload={handleImageCapture} />
-          )}
-          {captureMethod === '3d' && (
-            <DepthCameraCapture onCapture={handleImageCapture} />
-          )}
-          {captureMethod === 'multipose' && (
-            <MultiplePoseCapture onCapture={(poses) => {
-              // Use the front pose as the main image
-              handleImageCapture(poses.front);
-            }} />
-          )}
+          {(() => {
+            const CaptureModeSwitcher = (
+              <div className="flex flex-col items-start mb-6 px-4">
+                <button
+                  onClick={() => setIsCaptureMenuOpen(!isCaptureMenuOpen)}
+                  className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-800 transition-all group"
+                  title="Switch Capture Method"
+                >
+                  <div className="flex items-center justify-center">
+                    {isCaptureMenuOpen ? <X className="w-5 h-5" /> : <Plus className="w-6 h-6 stroke-[2px]" />}
+                  </div>
+                  <span className="font-bold text-xs uppercase tracking-widest text-gray-500 group-hover:text-indigo-600">Choose Camera Mode</span>
+                </button>
+                {isCaptureMenuOpen && (
+                  <div className="flex flex-wrap gap-2 mt-4 items-center animate-in slide-in-from-top-2 fade-in">
+                    {[
+                      { id: 'camera', name: 'Camera', icon: Camera },
+                      { id: 'upload', name: 'Upload', icon: Upload },
+                      { id: '3d', name: '3D Scan', icon: Layers },
+                      { id: 'multipose', name: 'Multi-Pose', icon: Users }
+                    ].map((method) => {
+                      if (captureMethod === method.id) return null;
+                      const Icon = method.icon;
+                      return (
+                        <button
+                          key={method.id}
+                          onClick={() => { setCaptureMethod(method.id as any); setIsCaptureMenuOpen(false); }}
+                          className="flex items-center gap-2 bg-white/80 p-2 pr-4 rounded-xl shadow-sm border border-gray-100 transition-all hover:bg-indigo-50 hover:border-indigo-100"
+                        >
+                          <div className="bg-indigo-50 p-2 text-indigo-600 rounded-lg">
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <span className="font-bold text-[10px] sm:text-xs text-gray-700 whitespace-nowrap">{method.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+
+            return (
+              <>
+                {captureMethod === 'camera' && (
+                  <CameraCapture onCapture={handleImageCapture} overlay={CaptureModeSwitcher} />
+                )}
+
+                {captureMethod === 'upload' && (
+                  <div className="relative">
+                    {CaptureModeSwitcher}
+                    <div className="pt-16">
+                      <ImageUpload onUpload={handleImageCapture} />
+                    </div>
+                  </div>
+                )}
+
+                {captureMethod === '3d' && (
+                  <DepthCameraCapture onCapture={handleImageCapture} overlay={CaptureModeSwitcher} />
+                )}
+
+                {captureMethod === 'multipose' && (
+                  <MultiplePoseCapture onCapture={(poses) => {
+                    handleImageCapture(poses.front);
+                  }} overlay={CaptureModeSwitcher} />
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
 
       {activeTab === 'capture' && isProcessing && (
-        <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-100 rounded-full mb-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-slate-200/50 border border-white p-8 sm:p-12 text-center transform transition-all">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-teal-100 to-indigo-100 rounded-2xl shadow-inner mb-6 animate-pulse">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-t-transparent border-teal-500"></div>
           </div>
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Processing Your Image</h3>
-          <p className="text-sm sm:text-base text-gray-600 mb-4">{processingStep}</p>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div className="bg-teal-500 h-2 rounded-full transition-all duration-1000 w-3/4"></div>
+          <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 tracking-tight">Processing Your Image</h3>
+          <p className="text-base sm:text-lg text-gray-500 mb-6">{processingStep}</p>
+          <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden shadow-inner">
+            <div className="bg-gradient-to-r from-teal-400 to-indigo-500 h-3 rounded-full transition-all duration-1000 w-3/4"></div>
           </div>
         </div>
       )}
 
       {activeTab === 'capture' && measurements && (
-        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
-          <div className="flex items-center space-x-3 mb-4 sm:mb-6">
-            <CheckCircle2 className="w-8 h-8 text-green-500" />
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Your Body Measurements</h3>
+        <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-slate-200/50 border border-white p-6 sm:p-10 transform transition-all duration-500 animate-in fade-in slide-in-from-bottom-5">
+          <div className="flex items-center space-x-4 mb-8">
+            <div className="p-3 bg-green-100 rounded-full shadow-sm">
+              <CheckCircle2 className="w-8 h-8 text-green-600" />
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Your Body Measurements</h3>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4 sm:gap-8">
-            <div className="space-y-3 sm:space-y-4">
+          <div className="grid sm:grid-cols-2 gap-5 sm:gap-10">
+            <div className="space-y-4">
               <MeasurementItem label="Shoulder Width" value={measurements.shoulder_width} />
               <MeasurementItem label="Chest Circumference" value={measurements.chest} />
               <MeasurementItem label="Waist Circumference" value={measurements.waist} />
               <MeasurementItem label="Hip Circumference" value={measurements.hips} />
             </div>
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-4">
               <MeasurementItem label="Arm Length" value={measurements.arm_length} />
               <MeasurementItem label="Leg Length" value={measurements.leg_length} />
               <MeasurementItem label="Inseam" value={measurements.inseam} />
@@ -241,28 +257,28 @@ const MeasurementCapture: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+          <div className="mt-10 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 justify-end">
             <button
               onClick={resetCapture}
-              className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex items-center justify-center space-x-2 px-6 py-3.5 bg-gray-100/80 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
             >
-              <Camera className="w-4 h-4" />
+              <Camera className="w-5 h-5" />
               <span>New Measurement</span>
             </button>
             <button
               onClick={() => {
                 navigator.clipboard.writeText(JSON.stringify(measurements, null, 2));
               }}
-              className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
+              className="flex items-center justify-center space-x-2 px-6 py-3.5 bg-indigo-50 text-indigo-700 font-semibold rounded-xl hover:bg-indigo-100 transition-colors"
             >
-              <Ruler2 className="w-4 h-4" />
+              <Ruler2 className="w-5 h-5" />
               <span>Copy Results</span>
             </button>
             <button
               onClick={() => setActiveTab('recommendations')}
-              className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              className="flex items-center justify-center space-x-2 px-6 py-3.5 bg-gradient-to-r from-teal-500 to-indigo-500 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
             >
-              <User className="w-4 h-4" />
+              <User className="w-5 h-5" />
               <span>Get Recommendations</span>
             </button>
           </div>
@@ -323,9 +339,9 @@ const MeasurementCapture: React.FC = () => {
 };
 
 const MeasurementItem: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="flex justify-between items-center p-3 sm:p-4 bg-gray-50 rounded-lg">
-    <span className="font-medium text-gray-700 text-sm sm:text-base">{label}</span>
-    <span className="text-lg sm:text-xl font-bold text-teal-600">{value}</span>
+  <div className="flex justify-between items-center p-4 sm:p-5 bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-50/50 hover:border-teal-100 transition-colors">
+    <span className="font-medium text-gray-600 text-sm sm:text-base">{label}</span>
+    <span className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-indigo-600">{value}</span>
   </div>
 );
 

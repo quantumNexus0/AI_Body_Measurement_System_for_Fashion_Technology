@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shirt, Package, TrendingUp, Star, ShoppingBag, Filter } from 'lucide-react';
+import { Shirt, Package, TrendingUp, Star, ShoppingBag, Filter, X, Check, Info } from 'lucide-react';
 
 interface Measurements {
   shoulder_width: string;
@@ -37,6 +37,7 @@ const ClothingRecommendations: React.FC<ClothingRecommendationsProps> = ({ measu
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedFit, setSelectedFit] = useState<string>('all');
   const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
 
   const categories = [
     { id: 'all', name: 'All Items', icon: Package },
@@ -57,162 +58,28 @@ const ClothingRecommendations: React.FC<ClothingRecommendationsProps> = ({ measu
     generateRecommendations();
   }, [measurements]);
 
-  const generateRecommendations = () => {
+  const generateRecommendations = async () => {
     setLoading(true);
-    
-    // Parse measurements
-    const chest = parseFloat(measurements.chest.split(' ')[0]);
-    const waist = parseFloat(measurements.waist.split(' ')[0]);
-    const shoulderWidth = parseFloat(measurements.shoulder_width.split(' ')[0]);
-    const inseam = parseFloat(measurements.inseam.split(' ')[0]);
-    const neck = parseFloat(measurements.neck.split(' ')[0]);
-
-    // Generate size recommendations based on measurements
-    const shirtSize = determineShirtSize(chest, shoulderWidth);
-    const pantsSize = determinePantsSize(waist, inseam);
-    const jacketSize = determineJacketSize(chest, shoulderWidth);
-    const suitSize = determineSuitSize(chest, waist, shoulderWidth);
-
-    const mockRecommendations: ClothingItem[] = [
-      // Shirts
-      {
-        id: '1',
-        name: 'Premium Cotton Dress Shirt',
-        category: 'shirts',
-        brand: 'Taylor & Wright',
-        sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-        recommendedSize: shirtSize,
-        confidence: 95,
-        price: '$89.99',
-        image: 'https://images.pexels.com/photos/996329/pexels-photo-996329.jpeg?auto=compress&cs=tinysrgb&w=300',
-        fit: 'Regular',
-        material: '100% Cotton',
-        rating: 4.8,
-        reviews: 1247
-      },
-      {
-        id: '2',
-        name: 'Slim Fit Business Shirt',
-        category: 'shirts',
-        brand: 'Modern Fit Co.',
-        sizes: ['XS', 'S', 'M', 'L', 'XL'],
-        recommendedSize: adjustSizeForFit(shirtSize, 'slim'),
-        confidence: 92,
-        price: '$69.99',
-        image: 'https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg?auto=compress&cs=tinysrgb&w=300',
-        fit: 'Slim',
-        material: 'Cotton Blend',
-        rating: 4.6,
-        reviews: 892
-      },
-      // Pants
-      {
-        id: '3',
-        name: 'Classic Chino Pants',
-        category: 'pants',
-        brand: 'Urban Essentials',
-        sizes: ['28', '30', '32', '34', '36', '38', '40'],
-        recommendedSize: pantsSize,
-        confidence: 94,
-        price: '$79.99',
-        image: 'https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg?auto=compress&cs=tinysrgb&w=300',
-        fit: 'Regular',
-        material: 'Cotton Twill',
-        rating: 4.7,
-        reviews: 1156
-      },
-      {
-        id: '4',
-        name: 'Slim Fit Dress Pants',
-        category: 'pants',
-        brand: 'Executive Style',
-        sizes: ['28', '30', '32', '34', '36', '38'],
-        recommendedSize: adjustPantsSizeForFit(pantsSize, 'slim'),
-        confidence: 91,
-        price: '$99.99',
-        image: 'https://images.pexels.com/photos/1598508/pexels-photo-1598508.jpeg?auto=compress&cs=tinysrgb&w=300',
-        fit: 'Slim',
-        material: 'Wool Blend',
-        rating: 4.5,
-        reviews: 743
-      },
-      // Jackets
-      {
-        id: '5',
-        name: 'Tailored Blazer',
-        category: 'jackets',
-        brand: 'Gentleman\'s Choice',
-        sizes: ['36R', '38R', '40R', '42R', '44R', '46R'],
-        recommendedSize: jacketSize,
-        confidence: 96,
-        price: '$249.99',
-        image: 'https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg?auto=compress&cs=tinysrgb&w=300',
-        fit: 'Regular',
-        material: 'Wool',
-        rating: 4.9,
-        reviews: 567
-      },
-      // Suits
-      {
-        id: '6',
-        name: 'Two-Piece Business Suit',
-        category: 'suits',
-        brand: 'Executive Collection',
-        sizes: ['36R', '38R', '40R', '42R', '44R'],
-        recommendedSize: suitSize,
-        confidence: 93,
-        price: '$399.99',
-        image: 'https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg?auto=compress&cs=tinysrgb&w=300',
-        fit: 'Regular',
-        material: 'Wool Blend',
-        rating: 4.8,
-        reviews: 234
+    try {
+      const response = await fetch('http://localhost:3001/api/recommendations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ measurements })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        setRecommendations(result.data);
+      } else {
+        console.error('Failed to generate recommendations:', result.message);
       }
-    ];
-
-    setTimeout(() => {
-      setRecommendations(mockRecommendations);
+    } catch (error) {
+      console.error('Network error fetching recommendations:', error);
+    } finally {
       setLoading(false);
-    }, 1500);
-  };
-
-  const determineShirtSize = (chest: number, shoulder: number): string => {
-    if (chest < 90) return 'S';
-    if (chest < 100) return 'M';
-    if (chest < 110) return 'L';
-    if (chest < 120) return 'XL';
-    return 'XXL';
-  };
-
-  const determinePantsSize = (waist: number, inseam: number): string => {
-    const waistSize = Math.round(waist / 2.54); // Convert cm to inches
-    return `${waistSize}`;
-  };
-
-  const determineJacketSize = (chest: number, shoulder: number): string => {
-    const chestInches = Math.round(chest / 2.54);
-    return `${chestInches}R`;
-  };
-
-  const determineSuitSize = (chest: number, waist: number, shoulder: number): string => {
-    const chestInches = Math.round(chest / 2.54);
-    return `${chestInches}R`;
-  };
-
-  const adjustSizeForFit = (size: string, fit: string): string => {
-    if (fit === 'slim') {
-      const sizeMap = { 'XS': 'XS', 'S': 'XS', 'M': 'S', 'L': 'M', 'XL': 'L', 'XXL': 'XL' };
-      return sizeMap[size] || size;
     }
-    return size;
-  };
-
-  const adjustPantsSizeForFit = (size: string, fit: string): string => {
-    if (fit === 'slim') {
-      const waistSize = parseInt(size);
-      return `${waistSize - 1}`;
-    }
-    return size;
   };
 
   const filteredRecommendations = recommendations.filter(item => {
@@ -236,132 +103,225 @@ const ClothingRecommendations: React.FC<ClothingRecommendationsProps> = ({ measu
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
-      <div className="flex items-center space-x-3 mb-4 sm:mb-6">
-        <ShoppingBag className="w-8 h-8 text-teal-600" />
-        <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Clothing Recommendations</h3>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <div className="flex items-center space-x-2">
-          <Filter className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700">Category:</span>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="flex-1 sm:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-          >
-            {categories.map(category => (
-              <option key={category.id} value={category.id}>{category.name}</option>
-            ))}
-          </select>
+    <div className="relative">
+      <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
+        <div className="flex items-center space-x-3 mb-4 sm:mb-6">
+          <ShoppingBag className="w-8 h-8 text-teal-600" />
+          <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Clothing Recommendations</h3>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <span className="text-sm font-medium text-gray-700">Fit:</span>
-          <select
-            value={selectedFit}
-            onChange={(e) => setSelectedFit(e.target.value)}
-            className="flex-1 sm:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-          >
-            {fitTypes.map(fit => (
-              <option key={fit.id} value={fit.id}>{fit.name}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="flex items-center space-x-2">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">Category:</span>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="flex-1 sm:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            >
+              {categories.map(category => (
+                <option key={category.id} value={category.id}>{category.name}</option>
+              ))}
+            </select>
+          </div>
 
-      {/* Recommendations Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {filteredRecommendations.map(item => (
-          <div key={item.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="relative">
-              <img 
-                src={item.image} 
-                alt={item.name}
-                className="w-full h-40 sm:h-48 object-cover"
-              />
-              <div className="absolute top-2 right-2 bg-teal-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-                {item.confidence}% Match
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-gray-700">Fit:</span>
+            <select
+              value={selectedFit}
+              onChange={(e) => setSelectedFit(e.target.value)}
+              className="flex-1 sm:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            >
+              {fitTypes.map(fit => (
+                <option key={fit.id} value={fit.id}>{fit.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Recommendations Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {filteredRecommendations.map(item => (
+            <div key={item.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="relative">
+                <img 
+                  src={item.image} 
+                  alt={item.name}
+                  className="w-full h-40 sm:h-48 object-cover"
+                />
+                <div className="absolute top-2 right-2 bg-teal-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                  {item.confidence}% Match
+                </div>
+              </div>
+              
+              <div className="p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-semibold text-gray-900 text-sm sm:text-base pr-2">{item.name}</h4>
+                  <span className="text-teal-600 font-bold text-sm sm:text-base whitespace-nowrap">{item.price}</span>
+                </div>
+                
+                <p className="text-gray-600 text-xs sm:text-sm mb-2">{item.brand}</p>
+                
+                <div className="flex items-center space-x-2 sm:space-x-4 mb-3 text-xs text-gray-500">
+                  <span>{item.material}</span>
+                  <span>{item.fit} Fit</span>
+                </div>
+                
+                <div className="flex items-center space-x-2 mb-3">
+                  <div className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                      <Star 
+                        key={i} 
+                        className={`w-3 h-3 ${i < Math.floor(item.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                      />
+                    ))}
+                  </div>
+                  <span className="text-xs text-gray-500">({item.reviews})</span>
+                </div>
+                
+                <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-medium text-teal-800">Recommended Size:</span>
+                    <span className="text-base sm:text-lg font-bold text-teal-600">{item.recommendedSize}</span>
+                  </div>
+                  <div className="flex items-center mt-1">
+                    <TrendingUp className="w-3 h-3 text-teal-500 mr-1" />
+                    <span className="text-xs text-teal-600">{item.confidence}% confidence</span>
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={() => setSelectedItem(item)}
+                  className="w-full bg-teal-500 text-white py-2 rounded-lg hover:bg-teal-600 transition-colors text-sm font-medium"
+                >
+                  View Details
+                </button>
               </div>
             </div>
-            
-            <div className="p-4">
-              <div className="flex items-start justify-between mb-2">
-                <h4 className="font-semibold text-gray-900 text-sm sm:text-base pr-2">{item.name}</h4>
-                <span className="text-teal-600 font-bold text-sm sm:text-base whitespace-nowrap">{item.price}</span>
+          ))}
+        </div>
+
+        {filteredRecommendations.length === 0 && (
+          <div className="text-center py-6 sm:py-8">
+            <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-sm sm:text-base text-gray-500 px-4">No recommendations found for the selected filters.</p>
+          </div>
+        )}
+
+        {/* Size Guide */}
+        <div className="mt-6 sm:mt-8 bg-gray-50 rounded-lg p-4 sm:p-6">
+          <h4 className="font-semibold text-gray-900 mb-3 sm:mb-4 text-base sm:text-lg">Size Guide Based on Your Measurements</h4>
+          <div className="grid sm:grid-cols-2 gap-4 sm:gap-6 text-sm">
+            <div>
+              <h5 className="font-medium text-gray-800 mb-2">Shirts & Jackets</h5>
+              <ul className="space-y-1 text-gray-600">
+                <li>Chest: {measurements.chest}</li>
+                <li>Shoulder: {measurements.shoulder_width}</li>
+                <li>Neck: {measurements.neck}</li>
+                <li>Arm Length: {measurements.arm_length}</li>
+              </ul>
+            </div>
+            <div>
+              <h5 className="font-medium text-gray-800 mb-2">Pants</h5>
+              <ul className="space-y-1 text-gray-600">
+                <li>Waist: {measurements.waist}</li>
+                <li>Hips: {measurements.hips}</li>
+                <li>Inseam: {measurements.inseam}</li>
+                <li>Leg Length: {measurements.leg_length}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Item Details Modal */}
+      {selectedItem && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setSelectedItem(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col sm:flex-row relative animate-in zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setSelectedItem(null)}
+              className="absolute top-4 right-4 z-10 p-2 bg-white/80 backdrop-blur-md rounded-full text-gray-500 hover:text-gray-800 transition-colors shadow-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Image Section */}
+            <div className="w-full sm:w-1/2 h-64 sm:h-auto overflow-hidden">
+              <img 
+                src={selectedItem.image} 
+                alt={selectedItem.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            {/* Content Section */}
+            <div className="w-full sm:w-1/2 p-6 sm:p-8 overflow-y-auto">
+              <div className="mb-4">
+                <span className="text-xs font-bold text-teal-600 uppercase tracking-widest bg-teal-50 px-2 py-1 rounded-md mb-2 inline-block">
+                  {selectedItem.category}
+                </span>
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900">{selectedItem.name}</h3>
+                <p className="text-gray-500 text-sm font-medium">{selectedItem.brand}</p>
               </div>
-              
-              <p className="text-gray-600 text-xs sm:text-sm mb-2">{item.brand}</p>
-              
-              <div className="flex items-center space-x-2 sm:space-x-4 mb-3 text-xs text-gray-500">
-                <span>{item.material}</span>
-                <span>{item.fit} Fit</span>
-              </div>
-              
-              <div className="flex items-center space-x-2 mb-3">
-                <div className="flex items-center">
-                  {[...Array(5)].map((_, i) => (
-                    <Star 
-                      key={i} 
-                      className={`w-3 h-3 ${i < Math.floor(item.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-                    />
-                  ))}
+
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-2xl font-extrabold text-teal-600 font-mono tracking-tighter">{selectedItem.price}</span>
+                <div className="flex items-center space-x-1 bg-yellow-50 px-2 py-1 rounded-lg">
+                  <Star className="w-3.5 h-3.5 text-yellow-400 fill-current" />
+                  <span className="text-xs font-bold text-yellow-700">{selectedItem.rating}</span>
                 </div>
-                <span className="text-xs text-gray-500">({item.reviews})</span>
               </div>
-              
-              <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm font-medium text-teal-800">Recommended Size:</span>
-                  <span className="text-base sm:text-lg font-bold text-teal-600">{item.recommendedSize}</span>
+
+              {/* Recommended Fit Section */}
+              <div className="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl p-5 mb-6 text-white shadow-lg shadow-teal-100">
+                 <div className="flex items-center justify-between mb-3">
+                   <div className="flex items-center space-x-2">
+                     <TrendingUp className="w-4 h-4 text-teal-100" />
+                     <span className="text-xs font-bold uppercase tracking-widest text-teal-50">Best Fit For You</span>
+                   </div>
+                   <div className="bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] font-bold">
+                     {selectedItem.confidence}% Accuracy
+                   </div>
+                 </div>
+                 <div className="flex items-center justify-between">
+                   <span className="text-2xl font-black">{selectedItem.recommendedSize}</span>
+                   <span className="text-xs opacity-90 font-medium">Based on your {measurements.chest} Chest</span>
+                 </div>
+              </div>
+
+              {/* Product Info */}
+              <div className="space-y-4 mb-6">
+                <div className="flex items-start space-x-3">
+                   <div className="bg-gray-100 p-2 rounded-lg"><Check className="w-4 h-4 text-gray-600" /></div>
+                   <div>
+                     <h5 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Material & Quality</h5>
+                     <p className="text-xs text-gray-500 leading-relaxed">Premium {selectedItem.material} with ultra-soft finish. Breathable and durable for daily wear.</p>
+                   </div>
                 </div>
-                <div className="flex items-center mt-1">
-                  <TrendingUp className="w-3 h-3 text-teal-500 mr-1" />
-                  <span className="text-xs text-teal-600">{item.confidence}% confidence</span>
+                <div className="flex items-start space-x-3">
+                   <div className="bg-gray-100 p-2 rounded-lg"><Info className="w-4 h-4 text-gray-600" /></div>
+                   <div>
+                     <h5 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Garment Fit</h5>
+                     <p className="text-xs text-gray-500 leading-relaxed">{selectedItem.fit} fit designed to complement your {measurements.shoulder_width} shoulders perfectly.</p>
+                   </div>
                 </div>
               </div>
-              
-              <button className="w-full bg-teal-500 text-white py-2 rounded-lg hover:bg-teal-600 transition-colors text-sm font-medium">
-                View Details
+
+              <button className="w-full bg-gray-900 text-white py-3 rounded-xl font-bold hover:bg-black transition-all flex items-center justify-center space-x-2 shadow-lg active:scale-95">
+                <ShoppingBag className="w-4 h-4" />
+                <span>Shop This Look</span>
               </button>
             </div>
           </div>
-        ))}
-      </div>
-
-      {filteredRecommendations.length === 0 && (
-        <div className="text-center py-6 sm:py-8">
-          <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-sm sm:text-base text-gray-500 px-4">No recommendations found for the selected filters.</p>
         </div>
       )}
-
-      {/* Size Guide */}
-      <div className="mt-6 sm:mt-8 bg-gray-50 rounded-lg p-4 sm:p-6">
-        <h4 className="font-semibold text-gray-900 mb-3 sm:mb-4 text-base sm:text-lg">Size Guide Based on Your Measurements</h4>
-        <div className="grid sm:grid-cols-2 gap-4 sm:gap-6 text-sm">
-          <div>
-            <h5 className="font-medium text-gray-800 mb-2">Shirts & Jackets</h5>
-            <ul className="space-y-1 text-gray-600">
-              <li>Chest: {measurements.chest}</li>
-              <li>Shoulder: {measurements.shoulder_width}</li>
-              <li>Neck: {measurements.neck}</li>
-              <li>Arm Length: {measurements.arm_length}</li>
-            </ul>
-          </div>
-          <div>
-            <h5 className="font-medium text-gray-800 mb-2">Pants</h5>
-            <ul className="space-y-1 text-gray-600">
-              <li>Waist: {measurements.waist}</li>
-              <li>Hips: {measurements.hips}</li>
-              <li>Inseam: {measurements.inseam}</li>
-              <li>Leg Length: {measurements.leg_length}</li>
-            </ul>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

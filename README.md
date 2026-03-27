@@ -25,16 +25,62 @@ BodyFit AI is an advanced computer vision system that uses artificial intelligen
 
 ## 🏗️ System Architecture
 
+```mermaid
+graph TD
+    subgraph "Frontend (React + Vite)"
+        UI["User Interface"]
+        CAM["Camera Capture"]
+        UP["Image Upload"]
+        CAL["Calibration Modal"]
+        RES["Results Dashboard"]
+    end
+
+    subgraph "AI Engine (Browser/API)"
+        POSE["MediaPipe Pose Detection"]
+        MATH["Measurement Algorithms"]
+        SCALE["Scale Proportions"]
+    end
+
+    subgraph "Backend (Node.js + MongoDB)"
+        API["Express API"]
+        DB[(MongoDB)]
+        RECO["Recommendation Engine"]
+        IMG["Sharp Image Processing"]
+    end
+
+    UI --> CAM
+    UI --> UP
+    CAM --> POSE
+    UP --> POSE
+    POSE --> MATH
+    CAL --> SCALE
+    MATH & SCALE --> RES
+    RES --> API
+    API --> DB
+    API --> RECO
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Backend       │    │   AI Engine     │
-│   (React)       │◄──►│   (Node.js)     │◄──►│  (TensorFlow.js) │
-│                 │    │                 │    │                 │
-│ • Camera UI     │    │ • Image API     │    │ • Pose Detection│
-│ • Upload UI     │    │ • Processing    │    │ • Measurements  │
-│ • Calibration   │    │ • Validation    │    │ • Scaling       │
-│ • Results       │    │ • Response      │    │ • Validation    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+
+### 📋 User Workflow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant AI as AI Engine
+    participant B as Backend
+
+    U->>F: Select Method (Camera/Upload)
+    F->>U: Request Visuals
+    U->>F: Submit Image/Video Feed
+    F->>AI: Detect Body Landmarks
+    AI-->>F: Pose Metadata
+    F->>U: Ask for Calibration (Height)
+    U->>F: Enter 170cm
+    F->>AI: Calculate Real-world Measurements
+    AI-->>F: Measurement Data (cm)
+    F->>B: Save & Get Recommendations
+    B-->>F: Personalized Clothing Fits
+    F->>U: Display Final Results
 ```
 
 ## 🚀 Quick Start
