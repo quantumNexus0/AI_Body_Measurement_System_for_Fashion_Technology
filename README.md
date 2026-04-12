@@ -1,11 +1,12 @@
 # BodyFit AI - Precision Body Measurements System
 
 <div align="center">
-  <img src="https://img.shields.io/badge/React-18.3.1-blue?style=for-the-badge&logo=react" alt="React">
-  <img src="https://img.shields.io/badge/TypeScript-5.5.3-blue?style=for-the-badge&logo=typescript" alt="TypeScript">
-  <img src="https://img.shields.io/badge/Node.js-Express-green?style=for-the-badge&logo=node.js" alt="Node.js">
-  <img src="https://img.shields.io/badge/TensorFlow.js-4.15.0-orange?style=for-the-badge&logo=tensorflow" alt="TensorFlow">
-  <img src="https://img.shields.io/badge/Tailwind_CSS-3.4.1-38B2AC?style=for-the-badge&logo=tailwind-css" alt="Tailwind CSS">
+  <img src="https://img.shields.io/badge/React-18.3.1-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
+  <img src="https://img.shields.io/badge/TypeScript-5.5.3-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Node.js-Express-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js">
+  <img src="https://img.shields.io/badge/TensorFlow.js-4.15.0-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white" alt="TensorFlow">
+  <img src="https://img.shields.io/badge/MongoDB-Mongoose-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB">
+  <img src="https://img.shields.io/badge/Tailwind_CSS-3.4.1-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS">
 </div>
 
 ## 🎯 Overview
@@ -23,64 +24,68 @@ BodyFit AI is an advanced computer vision system that uses artificial intelligen
 - **⚡ Real-Time Processing**: Fast AI inference with visual feedback
 - **🎨 Professional UI**: Medical-grade interface with smooth animations
 
-## 🏗️ System Architecture
+## 🏗️ System Architecture & Logic Flow
+
+### 🔹 High-Level Architecture
+The system is divided into three main layers: Frontend (Interaction), AI Engine (Processing), and Backend (Data & Recommendations).
 
 ```mermaid
 graph TD
-    subgraph "Frontend (React + Vite)"
-        UI["User Interface"]
-        CAM["Camera Capture"]
-        UP["Image Upload"]
-        CAL["Calibration Modal"]
-        RES["Results Dashboard"]
+    subgraph "Frontend Layer (React + Vite)"
+        UI["User Interface (Web/Mobile)"]
+        CAM["Live Camera Feed"]
+        UP["Image Upload Engine"]
+        VIS["Visual Feedback System"]
     end
 
-    subgraph "AI Engine (Browser/API)"
-        POSE["MediaPipe Pose Detection"]
-        MATH["Measurement Algorithms"]
-        SCALE["Scale Proportions"]
+    subgraph "AI Engine (Client-Side)"
+        TF["TensorFlow.js Runtime"]
+        MOVE["MoveNet Pose Detector"]
+        KPs["17 Keypoint Coordinates"]
+        ALGO["Measurement Logic (Algorithms)"]
     end
 
-    subgraph "Backend (Node.js + MongoDB)"
-        API["Express API"]
-        DB[(MongoDB)]
-        RECO["Recommendation Engine"]
-        IMG["Sharp Image Processing"]
+    subgraph "Backend Layer (Node.js + Express)"
+        API["RESTful API Gateway"]
+        SHARP["Sharp Image Optimizer"]
+        RECO["Sizing Recommendation AI"]
+        DB[(MongoDB Cloud)]
     end
 
-    UI --> CAM
-    UI --> UP
-    CAM --> POSE
-    UP --> POSE
-    POSE --> MATH
-    CAL --> SCALE
-    MATH & SCALE --> RES
-    RES --> API
-    API --> DB
-    API --> RECO
+    UI --> CAM & UP
+    CAM & UP --> TF
+    TF --> MOVE --> KPs
+    KPs --> ALGO
+    ALGO --> VIS
+    VIS --> API
+    API --> SHARP --> DB
+    API --> RECO --> UI
 ```
 
-### 📋 User Workflow
+### 📋 Detailed Project Workflow
+This flow explains how the system goes from a raw image to precise measurements.
 
 ```mermaid
 sequenceDiagram
+    autonumber
     participant U as User
-    participant F as Frontend
-    participant AI as AI Engine
-    participant B as Backend
+    participant F as Frontend (React)
+    participant AI as AI Engine (TF.js)
+    participant B as Backend (Express)
 
-    U->>F: Select Method (Camera/Upload)
-    F->>U: Request Visuals
-    U->>F: Submit Image/Video Feed
-    F->>AI: Detect Body Landmarks
-    AI-->>F: Pose Metadata
-    F->>U: Ask for Calibration (Height)
-    U->>F: Enter 170cm
-    F->>AI: Calculate Real-world Measurements
-    AI-->>F: Measurement Data (cm)
-    F->>B: Save & Get Recommendations
-    B-->>F: Personalized Clothing Fits
-    F->>U: Display Final Results
+    U->>F: Access Camera or Upload Photo
+    F->>F: Pre-process Image & Scale
+    F->>AI: Send Image Frame
+    Note over AI: MoveNet detecting body parts...
+    AI-->>F: Return 17 Keypoint (x, y) coordinates
+    F->>U: Request Calibration (Height in cm)
+    U->>F: Input Height (e.g., 175cm)
+    F->>F: Logic: Pixels-to-Metric Conversion
+    F->>F: Logic: Estimate Circumferences (Elliptical Math)
+    F->>B: Send Measurement Data
+    B->>B: Process Recommendations
+    B-->>F: Success Status & Fit Suggestions
+    F->>U: Display Interactive Results Dashboard
 ```
 
 ## 🚀 Quick Start
@@ -258,29 +263,22 @@ bodyfit-ai-measurement-system/
 
 ## 🛠️ Technology Stack
 
-### Frontend
-- **React 18.3.1** - UI framework
-- **TypeScript 5.5.3** - Type safety
-- **Tailwind CSS 3.4.1** - Styling
-- **Vite 5.4.2** - Build tool
-- **React Router 6.22.0** - Navigation
-
-### Backend
-- **Node.js** - Runtime environment
-- **Express 4.18.2** - Web framework
-- **Multer 1.4.5** - File upload handling
-- **Sharp 0.33.2** - Image processing
-- **CORS 2.8.5** - Cross-origin requests
-
-### AI/ML
-- **TensorFlow.js 4.15.0** - Machine learning
-- **MediaPipe Pose Detection 2.1.1** - Body landmark detection
-
-### Development
-- **ESLint** - Code linting
-- **Concurrently** - Run multiple commands
-- **PostCSS** - CSS processing
-- **Autoprefixer** - CSS vendor prefixes
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Frontend** | **React 18** | Building an interactive, component-based user interface. |
+| | **TypeScript** | Ensuring type safety and better developer experience. |
+| | **Tailwind CSS** | Styling the application with a modern, responsive design. |
+| | **Vite** | Blazing fast build tool and development server. |
+| **AI/ML** | **TensorFlow.js** | Running computer vision models directly in the browser. |
+| | **MoveNet (Pose)** | Ultra-fast body landmark detection with 17 keypoints. |
+| | **Custom Math** | Algorithms for elliptical circumference estimation. |
+| **Backend** | **Node.js** | High-performance JavaScript runtime for the server. |
+| | **Express.js** | Minimalist web framework for building the REST API. |
+| | **MongoDB & Mongoose** | NoSQL database for flexible data modeling and storage. |
+| | **Sharp** | Image processing and dimension optimization. |
+| **Utilities** | **jsPDF** | Generating professional measurement reports in PDF. |
+| | **Lucide Icons** | Beautiful, lightweight icons for the UI. |
+| | **Multer** | Handling multipart/form-data for file uploads. |
 
 ## 🌐 Deployment
 
