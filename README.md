@@ -19,7 +19,7 @@ BodyFit AI is an advanced computer vision system that uses artificial intelligen
 - **📷 Dual Input Methods**: Camera capture and image upload functionality
 - **📏 Smart Calibration**: Height-based or reference object calibration for precise scaling
 - **🎯 8 Key Measurements**: Shoulder width, chest, waist, hips, arm length, leg length, inseam, and neck
-- **🔒 Privacy-First**: Temporary image processing with no data storage
+- **🔒 Data Transparency**: Images discarded after processing; measurements & sessions stored in MongoDB for progress tracking (see [Data Storage](#-data-storage--privacy))
 - **📱 Responsive Design**: Works seamlessly on desktop and mobile devices
 - **⚡ Real-Time Processing**: Fast AI inference with visual feedback
 - **🎨 Professional UI**: Medical-grade interface with smooth animations
@@ -331,13 +331,29 @@ EXPOSE 3000
 CMD ["npm", "start"]
 ```
 
-## 🔒 Privacy & Security
+## 🔒 Data Storage & Privacy
 
-- **No Data Storage**: Images are processed temporarily and immediately deleted
-- **Client-Side Processing**: AI inference runs in the browser when possible
-- **Secure API**: CORS protection and request validation
-- **Privacy-First**: No user data collection or tracking
-- **HTTPS Required**: Secure connections for camera access
+### What IS stored (MongoDB)
+
+| Collection | Fields stored | Purpose |
+|---|---|---|
+| `measurements` | `session_id`, `timestamp`, `measurements{}`, `calibration_method`, `confidence`, `notes` | Progress tracking, history |
+| `users` | `name`, `email`, `gender`, `height`, `weight` | Optional account linking |
+| `clothingitems` | Catalog data (name, brand, sizes, etc.) | Recommendations engine |
+
+### What is NOT stored
+
+- **Raw images are never persisted.** Uploaded files are held in-memory by multer, forwarded to the Python service, then garbage-collected.
+- **No biometric identifiers** (face, fingerprint) are stored or processed.
+- **Anonymous sessions are supported.** The `user` field on `measurements` is optional; unregistered users receive a `session_id` but no account is created.
+
+### Security measures
+
+- **CORS whitelist** — only `ALLOWED_ORIGINS` may call the API
+- **Helmet** — strict CSP and security headers on every response
+- **Rate limiting** — 60 req/min general, 10 req/min on `/measure`
+- **Input validation** — express-validator rejects out-of-range values with HTTP 422
+- **HTTPS required** in production for camera access and transport security
 
 ## 🎯 Measurement Accuracy
 
