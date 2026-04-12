@@ -13,11 +13,22 @@ const connectDB      = require('./config/db');
 const seedDatabase   = require('./utils/seedDatabase');
 
 // ── Validate required env vars before anything else ─────────────────────────
-const REQUIRED_ENV = ['PORT', 'MONGODB_URI', 'ALLOWED_ORIGINS'];
+const REQUIRED_ENV = ['PORT', 'NODE_ENV', 'MONGODB_URI', 'ALLOWED_ORIGINS'];
 const missingEnv   = REQUIRED_ENV.filter(k => !process.env[k]);
 if (missingEnv.length) {
-  console.error(`[startup] Missing required env vars: ${missingEnv.join(', ')}`);
-  console.error('[startup] Copy .env.example → .env and fill in the values.');
+  console.error('');
+  console.error('╔══════════════════════════════════════════════════════╗');
+  console.error('║         BodyFit AI — Startup Configuration Error      ║');
+  console.error('╠══════════════════════════════════════════════════════╣');
+  console.error(`║  Missing required environment variable(s):            ║`);
+  missingEnv.forEach(k => console.error(`║    ✖  ${k.padEnd(48)}║`));
+  console.error('╠══════════════════════════════════════════════════════╣');
+  console.error('║  Fix:                                                 ║');
+  console.error('║    bash setup.sh          (first-time setup)         ║');
+  console.error('║    — or —                                             ║');
+  console.error('║    cp .env.example server/.env  (then fill values)   ║');
+  console.error('╚══════════════════════════════════════════════════════╝');
+  console.error('');
   process.exit(1);
 }
 
