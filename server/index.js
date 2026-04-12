@@ -5,7 +5,6 @@ const path = require('path');
 const fs = require('fs').promises;
 const connectDB = require('./config/db');
 const seedDatabase = require('./utils/seedDatabase');
-const apiRoutes = require('./routes/api');
 
 // Connect to MongoDB and seed if empty
 connectDB().then(() => {
@@ -33,7 +32,8 @@ const TEMP_DIR = path.join(__dirname, 'temp');
 })();
 
 // API Routes
-app.use('/api', apiRoutes);
+const v1Router = require('./routes/v1');
+app.use('/api/v1', v1Router);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

@@ -6,7 +6,18 @@ exports.processMeasurement = async (req, res) => {
   try {
     const { calibrationData, userId, notes } = req.body;
     
-    let calibration = calibrationData ? JSON.parse(calibrationData) : { type: 'height', value: 170, unit: 'cm' };
+    // calibrationData is validated and potentially parsed by middleware logic
+    // but here we ensure it's a valid object
+    let calibration;
+    try {
+      calibration = typeof calibrationData === 'string' ? JSON.parse(calibrationData) : calibrationData;
+    } catch (e) {
+      return res.status(400).json({ success: false, message: 'Invalid calibration data format' });
+    }
+
+    if (!calibration) {
+      return res.status(422).json({ success: false, message: 'Calibration data is required' });
+    }
 
     const imageId = uuidv4();
 
