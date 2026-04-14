@@ -123,17 +123,17 @@ node test-api.js
 - Implement proper error boundaries
 - Follow React best practices
 
-### Backend Architecture
-- Keep routes thin, logic in services
-- Implement proper error handling
-- Use middleware for common functionality
+### Node.js API Gateway (Backend)
+- Keep routes thin, delegate logic to services
+- Implement proper error handling and authentication
+- Manage database persistence and user state securely
 - Follow REST API conventions
 
-### AI/ML Architecture
-- Optimize model loading and inference
-- Handle different input formats gracefully
-- Implement fallback mechanisms
-- Consider performance implications
+### Python Microservice (AI/ML Backend)
+- Handle heavy computer vision and pose estimation tasks
+- Maintain strict boundaries: don't directly access the user DB
+- Optimize model loading and inference (MediaPipe)
+- Handle different image input formats gracefully
 
 ## 🔒 Security Guidelines
 

@@ -19,6 +19,7 @@ const CalibrationModal: React.FC<CalibrationModalProps> = ({ onComplete, onCance
   const [heightUnit, setHeightUnit] = useState<'cm' | 'inches'>('cm');
   const [referenceObject, setReferenceObject] = useState<string>('phone');
   const [referenceValue, setReferenceValue] = useState<string>('');
+  const [error, setError] = useState<string>('');
 
   const referenceObjects = [
     { id: 'phone', name: 'Smartphone', icon: Smartphone, sizes: { cm: 15.5, inches: 6.1 } },
@@ -27,62 +28,89 @@ const CalibrationModal: React.FC<CalibrationModalProps> = ({ onComplete, onCance
   ];
 
   const handleSubmit = () => {
+    setError('');
+
     if (calibrationType === 'height') {
-      const value = parseFloat(heightValue) || 170; // Default height if invalid
-      onComplete({
-        type: 'height',
-        value,
-        unit: heightUnit
-      });
-    } else {
-      const customValue = parseFloat(referenceValue);
-      const selectedRef = referenceObjects.find(obj => obj.id === referenceObject);
-      
-      if (customValue > 0) {
-        onComplete({
-          type: 'reference',
-          value: customValue,
-          unit: heightUnit,
-          referenceObject
-        });
-      } else if (selectedRef) {
-        onComplete({
-          type: 'reference',
-          value: selectedRef.sizes[heightUnit],
-          unit: heightUnit,
-          referenceObject
-        });
-      } else {
-        // Default reference if nothing selected
-        onComplete({
-          type: 'reference',
-          value: 15.5,
-          unit: 'cm',
-          referenceObject: 'phone'
-        });
+      const value = parseFloat(heightValue);
+
+      if (isNaN(value)) {
+        setError('Please enter a valid number for height.');
+        return;
       }
+
+      if (heightUnit === 'cm' && (value < 100 || value > 250)) {
+        setError('Height must be between 100 cm and 250 cm.');
+        return;
+      }
+
+      if (heightUnit === 'inches' && (value < 40 || value > 100)) {
+        setError('Height must be between 40 in and 100 in.');
+        return;
+      }
+
+      onComplete({ type: 'height', value, unit: heightUnit });
+      return;
     }
+
+    // ✅ FIX 1: Removed unused 'selectedRef' variable — use referenceObjects.find inline
+    const customValue = parseFloat(referenceValue);
+
+    if (referenceValue && isNaN(customValue)) {
+      setError('Please enter a valid number for reference object size.');
+      return;
+    }
+
+    if (customValue > 0) {
+      onComplete({
+        type: 'reference',
+        value: customValue,
+        unit: heightUnit,
+        referenceObject,
+      });
+      return;
+    }
+
+    // ✅ FIX: inline find instead of storing in unused variable
+    const found = referenceObjects.find((obj) => obj.id === referenceObject);
+    if (found) {
+      onComplete({
+        type: 'reference',
+        value: found.sizes[heightUnit],
+        unit: heightUnit,
+        referenceObject,
+      });
+      return;
+    }
+
+    // Default fallback
+    onComplete({ type: 'reference', value: 15.5, unit: 'cm', referenceObject: 'phone' });
   };
 
-  const selectedRef = referenceObjects.find(obj => obj.id === referenceObject);
-  const isValid = true; // Always valid
+  // ✅ FIX 2: Removed unused 'isValid = true' variable entirely
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 max-h-screen overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg sm:text-xl font-bold text-gray-900">Calibration Required</h3>
-          <button
-            onClick={onCancel}
-            className="p-1 text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onCancel} className="p-1 text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <p className="text-sm sm:text-base text-gray-600 mb-6">
-          To get accurate measurements, we need a reference scale. Choose one of the options below:
+        <p className="text-sm sm:text-base text-gray-600 mb-4">
+          To get accurate measurements, we need a calibration reference. Please follow the guidance below carefully.
         </p>
+
+        <div className="mb-6 rounded-2xl border border-teal-100 bg-teal-50 p-4 text-sm text-teal-900">
+          <p className="font-medium">Calibration guidance</p>
+          <ul className="mt-2 space-y-1 list-disc list-inside">
+            <li>Stand straight with your full body visible in the frame.</li>
+            <li>Keep the camera at chest height and avoid tilted angles.</li>
+            <li>Make sure your feet and head are both visible.</li>
+            <li>Use your real height or a known object for the best results.</li>
+          </ul>
+        </div>
 
         <div className="space-y-4 mb-6">
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
@@ -124,9 +152,13 @@ const CalibrationModal: React.FC<CalibrationModalProps> = ({ onComplete, onCance
                   <input
                     type="number"
                     value={heightValue}
-                    onChange={(e) => setHeightValue(e.target.value)}
+                    onChange={(e) => { setHeightValue(e.target.value); setError(''); }}
                     placeholder="170"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-base"
+                    min={heightUnit === 'cm' ? 100 : 40}
+                    max={heightUnit === 'cm' ? 250 : 100}
+                    className={`flex-1 px-3 py-2 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-base border ${
+                      error ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <select
                     value={heightUnit}
@@ -137,6 +169,7 @@ const CalibrationModal: React.FC<CalibrationModalProps> = ({ onComplete, onCance
                     <option value="inches">inches</option>
                   </select>
                 </div>
+                {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
               </div>
             </div>
           ) : (
@@ -160,9 +193,7 @@ const CalibrationModal: React.FC<CalibrationModalProps> = ({ onComplete, onCance
                       >
                         <Icon className="w-6 h-6 mx-auto mb-1 text-teal-600" />
                         <div className="text-xs font-medium">{obj.name}</div>
-                        <div className="text-xs text-gray-500">
-                          {obj.sizes.cm}cm
-                        </div>
+                        <div className="text-xs text-gray-500">{obj.sizes.cm}cm</div>
                       </button>
                     );
                   })}
