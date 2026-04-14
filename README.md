@@ -90,7 +90,7 @@ Transforming a 2D frontal image into a 3D circumference is executed using **Srin
 
 **Ramanujan's Formula:**
 ```math
-P \approx \pi [ 3(a+b) - \sqrt{(3a + b)(a + 3b)} ]
+P \approx \pi \left( 3(a + b) - \sqrt{(3a + b)(a + 3b)} \right)
 ```
 *(Where `a` is the semi-major axis (width extracted via MediaPipe coordinates) and `b` is the semi-minor axis (estimated anatomical width-to-depth ratio))*
 
