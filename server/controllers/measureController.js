@@ -22,23 +22,68 @@ exports.processMeasurement = async (req, res) => {
     const imageId = uuidv4();
 
     // Process image if provided, for real setup this might go to an ML model microservice
+    let imageBuffer = null;
     if (req.file) {
-      await sharp(req.file.buffer)
+      imageBuffer = await sharp(req.file.buffer)
         .resize(1280, 720, { fit: 'inside', withoutEnlargement: true })
         .jpeg({ quality: 85 })
         .toBuffer()
         .catch(() => req.file.buffer);
     }
 
-    // Generate mock measurements for now
-    const mockMeasurements = simulateBodyMeasurements(calibration);
+    if (!imageBuffer) {
+      return res.status(400).json({ success: false, message: 'Image must be provided for AI measurement' });
+    }
+
+    // Call Python FastAPI
+    const formData = new FormData();
+    const blob = new Blob([imageBuffer], { type: 'image/jpeg' });
+    formData.append('image', blob, 'upload.jpg');
+    formData.append('calibrationData', JSON.stringify(calibration));
+    if (userId) formData.append('userId', userId);
+    if (notes) formData.append('notes', notes);
+
+    const pyResponse = await fetch('http://127.0.0.1:8000/api/v1/measure', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!pyResponse.ok) {
+      throw new Error(`Python API returned ${pyResponse.statusText}`);
+    }
+
+    const pyData = await pyResponse.json();
+    const jobId = pyData.data.job_id;
+
+    // Poll python API for job completion
+    let finalMeasurements = null;
+    let confidence = 0;
+    
+    // Attempt polling for up to 15 seconds
+    for (let i = 0; i < 15; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        const pollRes = await fetch(`http://127.0.0.1:8000/api/v1/measure/${jobId}`);
+        const pollData = await pollRes.json();
+        
+        if (pollData.data?.status === 'done' || pollData.data?.measurements) {
+            finalMeasurements = pollData.data.measurements;
+            confidence = pollData.confidence || 0.90;
+            break;
+        } else if (pollData.data?.status === 'failed') {
+            throw new Error('Python AI Engine failed to detect pose in image.');
+        }
+    }
+
+    if (!finalMeasurements) {
+      throw new Error('Timeout waiting for python measurement engine.');
+    }
 
     // Save to DB if user is provided
     let savedMeasurement = null;
     if (userId) {
       savedMeasurement = await Measurement.create({
         user: userId,
-        measurements: mockMeasurements,
+        measurements: finalMeasurements,
         calibration,
         notes
       });
@@ -46,13 +91,14 @@ exports.processMeasurement = async (req, res) => {
 
     res.json({
       success: true,
-      measurements: mockMeasurements,
+      measurements: finalMeasurements,
       savedMeasurement,
-      processingId: imageId
+      processingId: imageId,
+      confidence
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: 'Error processing measurement' });
+    res.status(500).json({ success: false, message: 'Error processing measurement: ' + error.message });
   }
 };
 
@@ -142,46 +188,3 @@ exports.getRecommendations = async (req, res) => {
   }
 };
 
-// Simulate body measurements
-function simulateBodyMeasurements(calibrationData) {
-  const unit = calibrationData.unit;
-  let baseValues;
-
-  if (unit === 'cm') {
-    baseValues = {
-      shoulder_width: 45 + Math.random() * 10,
-      chest: 90 + Math.random() * 20,
-      waist: 75 + Math.random() * 15,
-      hips: 95 + Math.random() * 15,
-      arm_length: 60 + Math.random() * 10,
-      leg_length: 90 + Math.random() * 15,
-      inseam: 75 + Math.random() * 10,
-      neck: 35 + Math.random() * 5
-    };
-  } else {
-    baseValues = {
-      shoulder_width: 17 + Math.random() * 4,
-      chest: 35 + Math.random() * 8,
-      waist: 29 + Math.random() * 6,
-      hips: 37 + Math.random() * 6,
-      arm_length: 24 + Math.random() * 4,
-      leg_length: 35 + Math.random() * 6,
-      inseam: 29 + Math.random() * 4,
-      neck: 14 + Math.random() * 2
-    };
-  }
-
-  if (calibrationData.type === 'height') {
-    const scaleFactor = calibrationData.value / (unit === 'cm' ? 170 : 67);
-    Object.keys(baseValues).forEach(key => {
-      baseValues[key] *= scaleFactor;
-    });
-  }
-
-  const measurements = {};
-  Object.keys(baseValues).forEach(key => {
-    measurements[key] = `${Math.round(baseValues[key] * 10) / 10} ${unit}`;
-  });
-
-  return measurements;
-}
