@@ -22,20 +22,22 @@
 | | Vite | 5.4.2 | Build tool & dev server |
 | **AI / ML** | TensorFlow.js | 4.15.0 | In-browser ML runtime |
 | | MoveNet Thunder | — | 17-keypoint pose detection (still images, browser) |
-| | MoveNet Lightning | — | Real-time camera preview overlay (browser) |
 | | MediaPipe Pose | 0.10.9 | 33-keypoint server-side detection (Python) |
+| | **MiDaS (Small)** | v2.1 | Monocular depth estimation (Python) |
 | **Backend** | Node.js + Express | 20 / 4.x | API gateway |
+| | **JWT** | 9.x | Session-based authentication |
 | | MongoDB + Mongoose | Atlas | Measurements, sessions, catalog |
 | | Multer | 1.4.x | Multipart upload (in-memory, UUID filenames) |
-| | Helmet | 7.x | HTTP security headers + CSP |
-| | express-rate-limit | 7.x | Request rate control |
+| | Helmet | 8.x | HTTP security headers + CSP |
+| | express-rate-limit | 8.x | Request rate control |
 | **Python Service** | FastAPI | 0.111 | Async measurement microservice |
+| | PyTorch | 2.2+ | Deep learning framework for MiDaS |
 | | Pydantic | V2 | Request validation |
 | | Motor | 3.x | Async MongoDB driver |
 | | MediaPipe | 0.10.9 | Pose landmark detection |
 | **Utilities** | jsPDF | 3.x | PDF report generation |
 | | Lucide React | 0.344 | Icon library |
-| | concurrently | 8.x | Run frontend + backend together |
+| | concurrently | 9.x | Run frontend + backend together |
 
 ---
 
@@ -62,18 +64,26 @@ The system is structured as a robust 3-tier microservice architecture to securel
 
 ```mermaid
 graph TD
-    UI[Frontend: React JS UI] -->|Uploads Image| Node(API Gateway: Node.js & Express)
-    Node -->|Forwards raw FormData| Python(Math Engine: Python FastAPI)
+    User((User)) -->|Auth/JWT| UI[Frontend: React JS UI]
+    UI -->|Protected API Call| Node(API Gateway: Node.js & Express)
     
-    subgraph Python Inference
-        Python --> CV[OpenCV: Pre-processes & A4 Calibration]
-        CV --> MP[MediaPipe: 33-Point Neural Network Extraction]
-        MP --> Math[Ramanujan Ellipse Algorithm]
+    subgraph Security Layer
+        Node --> Auth[JWT Verification]
+        Auth --> Limit[Rate Limiter: 10/min]
     end
     
-    Math -->|Returns Exact JSON Dimensions| Node
-    Node -->|Updates MongoDB & sends back match| UI
-    UI -->|Displays Perfect Size Recommendation| User((User))
+    Limit -->|Sanitized Request| Python(Math Engine: Python FastAPI)
+    
+    subgraph AI Processing Pipeline
+        Python --> CV[OpenCV: Pre-processing]
+        CV --> MP[MediaPipe: Pose Extraction]
+        MP --> Depth[MiDaS: Monocular Depth Mapping]
+        Depth --> Math[Ramanujan Ellipse Algorithm]
+    end
+    
+    Math -->|Precision JSON| Node
+    Node -->|Updates MongoDB| DB[(MongoDB Atlas)]
+    Node -->|Results| UI
 ```
 
 ### Why Python for Calculations?
@@ -86,13 +96,17 @@ While Node.js handles the user authentication and database management, **Python 
 
 ## ➗ Mathematical Algorithms & Formulas
 
-Transforming a 2D frontal image into a 3D circumference is executed using **Srinivasa Ramanujan’s Perimeter Approximation for an Ellipse**. The torso is modeled mathematically as a semi-flattened elliptical cylinder rather than a circle to minimize geometric padding errors on the waist and chest.
+Transforming a 2D frontal image into a 3D circumference is executed using **Srinivasa Ramanujan’s Perimeter Approximation for an Ellipse**. Our pipeline incorporates three advanced intelligence layers:
+
+1. **Confidence-Weighted Triangulation**: Each joint distance is weighted by its MoveNet confidence score, ensuring that occluded keypoints don't skew the final measurement.
+2. **MiDaS Monocular Depth Estimation**: Uses a separate neural network to estimate the relative depth (Z-axis) of body parts, allowing for true 3D volumetric correction from a single photo.
+3. **Automated Pose Quality Gate**: A pre-flight check that enforces **Bilateral Symmetry**. If a user's torso is tilted or not facing the camera squarely, the system provides real-time feedback.
 
 **Ramanujan's Formula:**
 ```math
 P \approx \pi \left( 3(a + b) - \sqrt{(3a + b)(a + 3b)} \right)
 ```
-*(Where `a` is the semi-major axis (width extracted via MediaPipe coordinates) and `b` is the semi-minor axis (estimated anatomical width-to-depth ratio))*
+*(Where `a` is the semi-major axis (width) and `b` is the semi-minor axis (depth estimated via MiDaS or anthropometric ratios))*
 
 ---
 
