@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
-require("dotenv").config({ path: "../.env" });
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 const ClothingItem = require("../models/ClothingItem");
 
 // ============================================================
@@ -580,21 +581,17 @@ const seedDatabase = async () => {
 
     const count = await ClothingItem.countDocuments();
 
-    if (count === 0) {
-      console.log("📦 Inserting mock clothing items into DB...");
-      await ClothingItem.insertMany(mockRecommendations);
-      console.log(
-        `✅ ${mockRecommendations.length} items inserted successfully!`,
-      );
-      printSummary();
-    } else {
-      console.log(
-        `ℹ️  ClothingItems already has ${count} documents. Skipping insert.`,
-      );
-      console.log(
-        "   To re-seed, drop the collection first: ClothingItem.deleteMany({})",
-      );
+    if (count > 0) {
+      console.log(`🗑️ Clearing ${count} existing clothing items from DB...`);
+      await ClothingItem.deleteMany({});
     }
+
+    console.log("📦 Inserting mock clothing items into DB...");
+    await ClothingItem.insertMany(mockRecommendations);
+    console.log(
+      `✅ ${mockRecommendations.length} items inserted successfully!`,
+    );
+    printSummary();
   } catch (error) {
     console.error("❌ Seeding error:", error.message || error);
   }

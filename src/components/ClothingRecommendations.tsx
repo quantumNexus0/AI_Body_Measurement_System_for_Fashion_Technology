@@ -61,7 +61,7 @@ const ClothingRecommendations: React.FC<ClothingRecommendationsProps> = ({ measu
   const generateRecommendations = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/recommendations', {
+      const response = await fetch('http://localhost:3001/api/v1/recommendations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
