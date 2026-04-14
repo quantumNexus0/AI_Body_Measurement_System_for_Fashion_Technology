@@ -4,9 +4,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
-from .models import MeasurementResponse
-from .engine import MeasurementEngine
-from .auth import verify_internal_token
+from models import MeasurementResponse
+from engine import MeasurementEngine
+from auth import verify_internal_token
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

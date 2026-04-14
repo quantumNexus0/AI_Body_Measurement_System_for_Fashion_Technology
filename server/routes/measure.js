@@ -1,7 +1,7 @@
-import { Router } from 'express';
-import multer from 'multer';
-import { requireAuth, measureLimiter } from '../middleware/auth.js';
-import { callPythonMeasure } from '../services/pythonClient.js';
+const { Router } = require('express');
+const multer = require('multer');
+const { requireAuth, measureLimiter } = require('../middleware/auth.js');
+const { callPythonMeasure } = require('../services/pythonClient.js');
 
 const router = Router();
 
@@ -65,4 +65,4 @@ router.post(
   }
 );
 
-export default router;
+module.exports = router;

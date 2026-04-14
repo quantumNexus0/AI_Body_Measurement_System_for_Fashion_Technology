@@ -4,8 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm run server\" \"vite\"",
+    "dev": "concurrently \"npm run python\" \"npm run server\" \"vite\"",
     "server": "cd server && node index.js",
+    "python": "cd python_backend && ..\\.venv\\Scripts\\uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",

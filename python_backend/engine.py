@@ -8,7 +8,7 @@ import tensorflow as tf
 import tensorflow_hub as hub
 import math
 
-from .models import MeasurementResponse, SingleMeasurement
+from models import MeasurementResponse, SingleMeasurement
 
 MOVENET_URL = "https://tfhub.dev/google/movenet/singlepose/thunder/4"
 

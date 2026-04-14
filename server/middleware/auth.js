@@ -8,13 +8,26 @@ const redisClient = createClient({
   url: process.env.REDIS_URL || 'redis://localhost:6379' 
 });
 
+let useRedis = false;
+
+redisClient.on('error', (err) => {
+  if (useRedis) console.warn('[auth] Redis lost connection:', err.message);
+  useRedis = false;
+});
+
+redisClient.on('connect', () => {
+  console.log('[auth] Redis connected successfully.');
+  useRedis = true;
+});
+
 redisClient.connect().catch((err) => {
-  console.error('[auth] Redis Connection Error:', err.message);
+  console.warn('[auth] Redis unavailable, falling back to in-memory rate limiting.');
+  useRedis = false;
 });
 
 /**
  * Rate limiter for CPU-intensive measurement requests.
- * Uses Redis store for distributed application support.
+ * Uses Redis store if available, falls back to in-memory if disconnected.
  */
 const measureLimiter = rateLimit({
   windowMs: 60 * 1000, 
@@ -25,13 +38,14 @@ const measureLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  store: new RedisStore({
+  // Fallback to memory if Redis is not explicitly needed or fails
+  store: (process.env.REDIS_URL && useRedis) ? new RedisStore({
     sendCommand: (...args) => redisClient.sendCommand(args),
-  }),
+  }) : undefined,
   keyGenerator: (req) => {
-    // Rate limit per user if authed, otherwise per IP
     return req.user?.id || req.ip;
-  }
+  },
+  validate: { xForwardedForHeader: false },
 });
 
 /**

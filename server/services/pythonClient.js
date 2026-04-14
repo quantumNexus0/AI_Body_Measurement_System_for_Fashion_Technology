@@ -1,5 +1,5 @@
-import axios from 'axios';
-import FormData from 'form-data';
+const axios = require('axios');
+const FormData = require('form-data');
 
 const PYTHON_URL = process.env.PYTHON_SIDECAR_URL || 'http://localhost:8000';
 const INTERNAL_SECRET = process.env.INTERNAL_API_SECRET;
@@ -25,7 +25,7 @@ const client = axios.create({
  * @param {'m'|'f'|'n'} gender - Anthropometric biasing
  * @returns {Promise<Object>} The measurement response from the Python engine
  */
-export async function callPythonMeasure(imageBuffer, mimeType, calibration, gender = 'n') {
+async function callPythonMeasure(imageBuffer, mimeType, calibration, gender = 'n') {
   const form = new FormData();
   form.append('image', imageBuffer, {
     filename: 'upload.jpg',
@@ -56,7 +56,7 @@ export async function callPythonMeasure(imageBuffer, mimeType, calibration, gend
  * Checks the health status of the Python AI sidecar.
  * @returns {Promise<boolean>}
  */
-export async function checkPythonHealth() {
+async function checkPythonHealth() {
   try {
     const { data } = await client.get('/health', { timeout: 3000 });
     return data.models_loaded === true;
@@ -64,3 +64,8 @@ export async function checkPythonHealth() {
     return false;
   }
 }
+
+module.exports = {
+  callPythonMeasure,
+  checkPythonHealth
+};
