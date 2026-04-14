@@ -210,6 +210,4 @@ class MeasurementProcessor {
     return `${Math.round(val * 10) / 10} ${unit}`;
   }
 }
-
 export default MeasurementProcessor;
- default MeasurementProcessor;
