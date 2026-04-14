@@ -1,47 +1,54 @@
-version: '3.8'
+version: "3.9"
 
 services:
-  # Main AI backend service (FastAPI)
-  python_backend:
-    build: 
-      context: ./python_backend
+  # Shared cache for rate limiting
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # AI engine running as an independent sidecar
+  python_sidecar:
+    build: ./python_backend
     ports:
       - "8000:8000"
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/bodyfit
-    depends_on:
-      - mongodb
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
+      - NODE_ORIGIN=http://localhost:3001
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # API Gateway (Node.js)
-  server:
-    build: 
-      context: ./server
+  # Express Gateway
+  node_gateway:
+    build: ./server
     ports:
       - "3001:3001"
+    depends_on:
+      python_sidecar:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       - PORT=3001
       - NODE_ENV=development
-      - MONGO_URI=mongodb://mongodb:27017/bodyfit
+      - JWT_SECRET=${JWT_SECRET}
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=bodyfit_ai_development_secret_32chars_long
+      - PYTHON_SIDECAR_URL=http://python_sidecar:8000
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
       - ALLOWED_ORIGINS=http://localhost:5173
+
+  # React Frontend (Vite)
+  frontend:
+    build: .
+    ports:
+      - "5173:5173"
     depends_on:
-      - mongodb
-      - redis
-
-  # Database
-  mongodb:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-
-  # Shared cache for rate limiting
-  redis:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
+      - node_gateway
+    environment:
+      - VITE_API_URL=http://localhost:3001
 
 volumes:
   mongodb_data:

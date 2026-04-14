@@ -124,11 +124,10 @@ const measureLimiter = rateLimit({
   },
 });
 
-const { requireAuth, measureLimiter } = require("./middleware/auth");
+const measureRouter = require("./routes/measure");
 
-app.use("/api", generalLimiter);
 // Protect all measurement routes with JWT and strict rate limiting
-app.use("/api/v1/measure", requireAuth, measureLimiter); 
+app.use("/api/v1/measure", measureRouter); 
 
 // ── Temp directory setup ─────────────────────────────────────────────────────
 const TEMP_DIR = path.join(__dirname, "temp");
