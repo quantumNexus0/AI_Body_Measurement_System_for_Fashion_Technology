@@ -21,7 +21,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install System Dependencies
+    - name: Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y libgl1-mesa-glx libglib2.0-0
@@ -30,8 +30,9 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('python_backend/requirements.txt') }}
+        key: ${{ runner.os }}-py${{ matrix.python-version }}-pip-${{ hashFiles('python_backend/requirements.txt') }}
         restore-keys: |
+          ${{ runner.os }}-py${{ matrix.python-version }}-pip-
           ${{ runner.os }}-pip-
 
     - name: Install dependencies
@@ -40,15 +41,12 @@ jobs:
         pip install -r python_backend/requirements.txt
         pip install pytest pytest-cov
 
-    - name: Run tests
-      run: |
-        cd python_backend && pytest tests/ -v --tb=short
-
     - name: Run tests with coverage
       run: |
-        cd python_backend && pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing
+        cd python_backend && pytest tests/ -v --tb=short --cov=. --cov-report=xml --cov-report=term-missing
 
     - name: Upload coverage report
+      if: matrix.python-version == '3.11'
       uses: codecov/codecov-action@v4
       with:
         file: ./python_backend/coverage.xml

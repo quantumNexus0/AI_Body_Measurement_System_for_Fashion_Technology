@@ -6,6 +6,7 @@ interface CalibrationData {
   value: number;
   unit: 'cm' | 'inches';
   referenceObject?: string;
+  gender?: 'm' | 'f' | 'n';
 }
 
 interface Measurements {
@@ -19,19 +20,18 @@ interface Measurements {
   neck: string;
 }
 
-// ✅ FIX 1: Explicit index-able type for baseValues — fixes ts(7053) "string can't index" error
-interface BaseValues {
-  shoulder_width: number;
-  chest: number;
-  waist: number;
-  hips: number;
-  arm_length: number;
-  leg_length: number;
-  inseam: number;
-  neck: number;
+interface WeightedKeypoint {
+  x: number;
+  y: number;
+  score: number;
+  depthEstimate?: number;
 }
 
-const CONFIDENCE_THRESHOLD = 0.4;
+const REQUIRED_KEYPOINTS = [
+  'left_shoulder', 'right_shoulder',
+  'left_hip', 'right_hip',
+  'left_ankle', 'right_ankle'
+];
 
 class MeasurementProcessor {
   private detector: poseDetection.PoseDetector | null = null;
@@ -39,25 +39,85 @@ class MeasurementProcessor {
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
-
     await tf.ready().catch(() => {});
-
     const model = poseDetection.SupportedModels.MoveNet;
-    this.detector = await poseDetection
-      .createDetector(model, {
-        modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
-      })
-      .catch(() => null);
-
+    this.detector = await poseDetection.createDetector(model, {
+      modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+    }).catch(() => null);
     this.initialized = true;
+  }
+
+  private assessPoseQuality(
+    keypoints: poseDetection.Keypoint[]
+  ): { pass: boolean; reason?: string; score: number } {
+    const kpMap = new Map(keypoints.map(k => [k.name, k]));
+    
+    for (const name of REQUIRED_KEYPOINTS) {
+      const kp = kpMap.get(name);
+      if (!kp || (kp.score ?? 0) < 0.5)
+        return { pass: false, reason: `Low confidence: ${name}`, score: 0 };
+    }
+
+    const avgScore = keypoints.reduce((s, k) => s + (k.score ?? 0), 0) / keypoints.length;
+    
+    // Check bilateral symmetry (ensure user is facing camera squarely)
+    const ls = kpMap.get('left_shoulder')!;
+    const rs = kpMap.get('right_shoulder')!;
+    const lh = kpMap.get('left_hip')!;
+    const rh = kpMap.get('right_hip')!;
+
+    const shoulderTilt = Math.abs(ls.y - rs.y) / Math.abs(ls.x - rs.x);
+    const hipTilt = Math.abs(lh.y - rh.y) / Math.abs(lh.x - rh.x);
+
+    if (shoulderTilt > 0.15 || hipTilt > 0.15) {
+      return { pass: false, reason: 'Non-frontal pose detected (Tilt)', score: avgScore };
+    }
+
+    return { pass: true, score: avgScore };
+  }
+
+  private confidenceWeightedDistance(
+    a: WeightedKeypoint,
+    b: WeightedKeypoint,
+    pixelToUnits: number
+  ): { value: number; confidence: number } {
+    const confidence = Math.min(a.score, b.score);
+    if (confidence < 0.35) return { value: -1, confidence: 0 };
+
+    const dz = (a.depthEstimate ?? 0) - (b.depthEstimate ?? 0);
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    const px = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    return { value: px / pixelToUnits, confidence };
+  }
+
+  private ellipsePerimeter(a: number, b: number): number {
+    const h = Math.pow(a - b, 2) / Math.pow(a + b, 2);
+    return Math.PI * (a + b) * (1 + (3 * h) / (10 + Math.sqrt(4 - 3 * h)));
+  }
+
+  private estimateCircumference(
+    widthUnits: number,
+    depthUnits: number | undefined,
+    type: 'chest' | 'waist' | 'hips',
+    gender: 'm' | 'f' | 'n' = 'n'
+  ): number {
+    const depthRatio = type === 'chest' 
+        ? (gender === 'f' ? 0.78 : 0.72) 
+        : type === 'waist' 
+        ? (gender === 'f' ? 0.68 : 0.62) 
+        : 0.85;
+    
+    const estimatedDepth = depthUnits ?? (widthUnits * depthRatio);
+    return this.ellipsePerimeter(widthUnits / 2, estimatedDepth / 2);
   }
 
   async processImage(
     imageBlob: Blob,
     calibrationData: CalibrationData
-  ): Promise<{ measurements: Measurements }> {
+  ): Promise<{ measurements: Measurements; quality?: any }> {
     if (!this.detector || !this.initialized) {
-      return { measurements: this.generateDefaultMeasurements(calibrationData) };
+        return { measurements: this.generateDefaultMeasurements(calibrationData) };
     }
 
     const imageUrl = URL.createObjectURL(imageBlob);
@@ -66,26 +126,21 @@ class MeasurementProcessor {
     return new Promise((resolve) => {
       img.onload = async () => {
         const poses = await this.detector!.estimatePoses(img).catch(() => []);
-
-        let measurements: Measurements;
         if (poses.length === 0) {
-          measurements = this.generateDefaultMeasurements(calibrationData);
-        } else {
-          // ✅ FIX 2: Removed unused 'imageWidth' parameter — only imageHeight is used
-          measurements =
-            this.calculateMeasurements(poses[0], calibrationData, img.height) ??
-            this.generateDefaultMeasurements(calibrationData);
+            resolve({ measurements: this.generateDefaultMeasurements(calibrationData) });
+            return;
         }
 
-        URL.revokeObjectURL(imageUrl);
-        resolve({ measurements });
-      };
+        const quality = this.assessPoseQuality(poses[0].keypoints);
+        if (!quality.pass) {
+            // Log warning but proceed with best-effort for now
+            console.warn(`[AI] Pose quality rejected: ${quality.reason}`);
+        }
 
-      img.onerror = () => {
+        const measurements = this.calculateMeasurements(poses[0], calibrationData, img.height);
+        resolve({ measurements: measurements ?? this.generateDefaultMeasurements(calibrationData), quality });
         URL.revokeObjectURL(imageUrl);
-        resolve({ measurements: this.generateDefaultMeasurements(calibrationData) });
       };
-
       img.src = imageUrl;
     });
   }
@@ -93,201 +148,68 @@ class MeasurementProcessor {
   private calculateMeasurements(
     pose: poseDetection.Pose,
     calibrationData: CalibrationData,
-    imageHeight: number          // ✅ imageWidth removed — was unused (ts6133)
+    imageHeight: number
   ): Measurements | null {
-    const keypoints = pose.keypoints!;
+    const kps = pose.keypoints;
+    const kpMap = new Map(kps.map(k => [k.name, k as WeightedKeypoint]));
 
-    const nose          = keypoints.find((kp) => kp.name === 'nose');
-    const leftShoulder  = keypoints.find((kp) => kp.name === 'left_shoulder');
-    const rightShoulder = keypoints.find((kp) => kp.name === 'right_shoulder');
-    const leftElbow     = keypoints.find((kp) => kp.name === 'left_elbow');
-    const leftWrist     = keypoints.find((kp) => kp.name === 'left_wrist');
-    const leftHip       = keypoints.find((kp) => kp.name === 'left_hip');
-    const rightHip      = keypoints.find((kp) => kp.name === 'right_hip');
-    const leftKnee      = keypoints.find((kp) => kp.name === 'left_knee');
-    const leftAnkle     = keypoints.find((kp) => kp.name === 'left_ankle');
+    const pxPerUnit = this.calculatePixelsPerUnit(kps, calibrationData, imageHeight);
+    if (pxPerUnit <= 0) return null;
 
-    // Require these four to be valid
-    if (
-      !this.isValidKeypoint(leftShoulder) ||
-      !this.isValidKeypoint(rightShoulder) ||
-      !this.isValidKeypoint(leftHip) ||
-      !this.isValidKeypoint(rightHip)
-    ) {
-      return null;
-    }
+    const getDist = (p1Name: string, p2Name: string) => {
+        const a = kpMap.get(p1Name);
+        const b = kpMap.get(p2Name);
+        if (!a || !b) return { value: -1, confidence: 0 };
+        return this.confidenceWeightedDistance(a, b, pxPerUnit);
+    };
 
-    const shoulderWidthPx = this.distance(leftShoulder, rightShoulder);
-    const hipWidthPx      = this.distance(leftHip, rightHip);
-    const waistWidthPx    = shoulderWidthPx * 0.85;
+    const shoulder = getDist('left_shoulder', 'right_shoulder');
+    const hips = getDist('left_hip', 'right_hip');
+    const gender = calibrationData.gender || 'n';
 
-    const pixelsPerUnit = this.calculatePixelsPerUnit(keypoints, calibrationData, imageHeight);
-    if (pixelsPerUnit <= 0) return null;
-
-    const leftWristValid = this.isValidKeypoint(leftWrist);
-    const leftElbowValid = this.isValidKeypoint(leftElbow);
-    const leftAnkleValid = this.isValidKeypoint(leftAnkle);
-    const leftKneeValid  = this.isValidKeypoint(leftKnee);
-
-    const armLengthPx = leftWristValid
-      ? this.distance(leftShoulder, leftWrist)
-      : leftElbowValid
-      ? this.distance(leftShoulder, leftElbow)
-      : 0;
-
-    const legLengthPx = leftAnkleValid
-      ? this.distance(leftHip, leftAnkle)
-      : leftKneeValid
-      ? this.distance(leftHip, leftKnee)
-      : 0;
-
-    // ✅ FIX 3: 'nose' is now actually used in estimateNeckCircumference
-    const neckCircumferencePx =
-      nose && this.isValidKeypoint(nose)
-        ? this.estimateNeckCircumference(nose, leftShoulder, rightShoulder)
-        : shoulderWidthPx * 0.35;
+    const armL = getDist('left_shoulder', 'left_elbow').value + getDist('left_elbow', 'left_wrist').value;
+    const legL = getDist('left_hip', 'left_knee').value + getDist('left_knee', 'left_ankle').value;
 
     return {
-      shoulder_width: this.fmt(shoulderWidthPx / pixelsPerUnit, calibrationData.unit),
-      chest: this.fmt(
-        this.estimateCircumference(leftShoulder, rightShoulder, 'chest') / pixelsPerUnit,
-        calibrationData.unit
-      ),
-      waist: this.fmt(
-        this.estimateCircumferenceFromWidth(waistWidthPx, 0.65) / pixelsPerUnit,
-        calibrationData.unit
-      ),
-      hips: this.fmt(
-        this.estimateCircumference(leftHip, rightHip, 'hips') / pixelsPerUnit,
-        calibrationData.unit
-      ),
-      arm_length: this.fmt(
-        (armLengthPx > 0 ? armLengthPx : shoulderWidthPx * 0.4) / pixelsPerUnit,
-        calibrationData.unit
-      ),
-      leg_length: this.fmt(
-        (legLengthPx > 0 ? legLengthPx : hipWidthPx * 0.9) / pixelsPerUnit,
-        calibrationData.unit
-      ),
-      inseam: this.fmt(
-        (leftAnkleValid
-          ? this.distance(leftHip, leftAnkle) * 0.75
-          : leftKneeValid
-          ? this.distance(leftHip, leftKnee) * 0.75
-          : hipWidthPx * 0.5) / pixelsPerUnit,
-        calibrationData.unit
-      ),
-      neck: this.fmt(neckCircumferencePx / pixelsPerUnit, calibrationData.unit),
+      shoulder_width: this.fmt(shoulder.value, calibrationData.unit),
+      chest: this.fmt(this.estimateCircumference(shoulder.value * 0.85, undefined, 'chest', gender), calibrationData.unit),
+      waist: this.fmt(this.estimateCircumference(shoulder.value * 0.78, undefined, 'waist', gender), calibrationData.unit),
+      hips: this.fmt(this.estimateCircumference(hips.value * 1.05, undefined, 'hips', gender), calibrationData.unit),
+      arm_length: this.fmt(armL > 0 ? armL : shoulder.value * 1.2, calibrationData.unit),
+      leg_length: this.fmt(legL > 0 ? legL : shoulder.value * 2.1, calibrationData.unit),
+      inseam: this.fmt(legL > 0 ? legL * 0.82 : shoulder.value * 1.7, calibrationData.unit),
+      neck: this.fmt(shoulder.value * 0.38, calibrationData.unit)
     };
   }
 
-  private calculatePixelsPerUnit(
-    keypoints: poseDetection.Keypoint[],
-    calibrationData: CalibrationData,
-    imageHeight: number
-  ): number {
-    if (calibrationData.type === 'height') {
-      const nose     = keypoints.find((kp) => kp.name === 'nose');
-      const leftHip  = keypoints.find((kp) => kp.name === 'left_hip');
-      const rightHip = keypoints.find((kp) => kp.name === 'right_hip');
-
-      if (!nose || !leftHip || !rightHip) return 0;
-
-      const hipY = (leftHip.y + rightHip.y) / 2;
-      const bodyHeightPixels = hipY - nose.y;
-      const estimatedFullHeightPixels = bodyHeightPixels / 0.6; // hip ≈ 60% of height
-      return estimatedFullHeightPixels / calibrationData.value;
-    }
-
-    // Reference object fallback
-    return imageHeight / (calibrationData.value * 12);
+  private calculatePixelsPerUnit(kps: poseDetection.Keypoint[], cal: CalibrationData, h: number): number {
+    const nose = kps.find(k => k.name === 'nose');
+    const lHip = kps.find(k => k.name === 'left_hip');
+    const rHip = kps.find(k => k.name === 'right_hip');
+    if (!nose || !lHip || !rHip) return 0;
+    const hipY = (lHip.y + rHip.y) / 2;
+    return (hipY - nose.y) / (cal.value * 0.6 / (cal.unit === 'cm' ? 1 : 2.54));
   }
 
-  private isValidKeypoint(kp?: poseDetection.Keypoint | null): kp is poseDetection.Keypoint {
-    return Boolean(kp && (kp.score ?? 1) >= CONFIDENCE_THRESHOLD);
+  private generateDefaultMeasurements(cal: CalibrationData): Measurements {
+    const unit = cal.unit;
+    const base = unit === 'cm' ? 100 : 40;
+    return {
+      shoulder_width: `45 ${unit}`,
+      chest: `95 ${unit}`,
+      waist: `80 ${unit}`,
+      hips: `100 ${unit}`,
+      arm_length: `65 ${unit}`,
+      leg_length: `95 ${unit}`,
+      inseam: `80 ${unit}`,
+      neck: `38 ${unit}`
+    };
   }
 
-  private estimateCircumferenceFromWidth(widthPixels: number, depthRatio = 0.75): number {
-    const a = widthPixels / 2;
-    const b = (widthPixels * depthRatio) / 2;
-    return Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
-  }
-
-  private distance(p1: poseDetection.Keypoint, p2: poseDetection.Keypoint): number {
-    return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
-  }
-
-  private estimateCircumference(
-    left: poseDetection.Keypoint,
-    right: poseDetection.Keypoint,
-    type: 'chest' | 'waist' | 'hips'
-  ): number {
-    const width = this.distance(left, right);
-    const depthRatio = type === 'chest' ? 0.75 : type === 'waist' ? 0.65 : 0.8;
-    return this.estimateCircumferenceFromWidth(width, depthRatio);
-  }
-
-  private estimateNeckCircumference(
-    nose: poseDetection.Keypoint,          // ✅ now used — fixes ts6133 "nose never read"
-    leftShoulder: poseDetection.Keypoint,
-    rightShoulder: poseDetection.Keypoint
-  ): number {
-    const shoulderWidth = this.distance(leftShoulder, rightShoulder);
-    // Use vertical distance from nose to shoulder midpoint as additional factor
-    const shoulderMidY = (leftShoulder.y + rightShoulder.y) / 2;
-    const neckHeightPx = Math.max(shoulderMidY - nose.y, 1);
-    const neckWidthEstimate = Math.min(shoulderWidth * 0.35, neckHeightPx * 0.8);
-    return this.estimateCircumferenceFromWidth(neckWidthEstimate, 0.85);
-  }
-
-  private generateDefaultMeasurements(calibrationData: CalibrationData): Measurements {
-    const unit = calibrationData.unit;
-
-    // ✅ FIX 4: Strongly typed BaseValues — eliminates ts(7053) index-signature errors
-    const baseValues: BaseValues =
-      unit === 'cm'
-        ? {
-            shoulder_width: 45 + Math.random() * 10,
-            chest:          90 + Math.random() * 20,
-            waist:          75 + Math.random() * 15,
-            hips:           95 + Math.random() * 15,
-            arm_length:     60 + Math.random() * 10,
-            leg_length:     90 + Math.random() * 15,
-            inseam:         75 + Math.random() * 10,
-            neck:           35 + Math.random() * 5,
-          }
-        : {
-            shoulder_width: 17 + Math.random() * 4,
-            chest:          35 + Math.random() * 8,
-            waist:          29 + Math.random() * 6,
-            hips:           37 + Math.random() * 6,
-            arm_length:     24 + Math.random() * 4,
-            leg_length:     35 + Math.random() * 6,
-            inseam:         29 + Math.random() * 4,
-            neck:           14 + Math.random() * 2,
-          };
-
-    // Apply height scaling
-    if (calibrationData.type === 'height') {
-      const scaleFactor = calibrationData.value / (unit === 'cm' ? 170 : 67);
-      // ✅ Typed key iteration — no implicit any
-      (Object.keys(baseValues) as (keyof BaseValues)[]).forEach((key) => {
-        baseValues[key] *= scaleFactor;
-      });
-    }
-
-    // ✅ Typed key iteration for final formatting
-    const result = {} as Measurements;
-    (Object.keys(baseValues) as (keyof BaseValues)[]).forEach((key) => {
-      result[key] = this.fmt(baseValues[key], unit);
-    });
-
-    return result;
-  }
-
-  private fmt(value: number, unit: 'cm' | 'inches'): string {
-    return `${Math.round(value * 10) / 10} ${unit}`;
+  private fmt(val: number, unit: string): string {
+    return `${Math.round(val * 10) / 10} ${unit}`;
   }
 }
 
 export default MeasurementProcessor;
+ default MeasurementProcessor;
