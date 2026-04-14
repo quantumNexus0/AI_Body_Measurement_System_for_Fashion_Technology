@@ -89,7 +89,9 @@ While Node.js handles the user authentication and database management, **Python 
 Transforming a 2D frontal image into a 3D circumference is executed using **Srinivasa Ramanujan’s Perimeter Approximation for an Ellipse**. The torso is modeled mathematically as a semi-flattened elliptical cylinder rather than a circle to minimize geometric padding errors on the waist and chest.
 
 **Ramanujan's Formula:**
-$$ P \approx \pi [ 3(a+b) - \sqrt{(3a + b)(a + 3b)} ] $$
+```math
+P \approx \pi [ 3(a+b) - \sqrt{(3a + b)(a + 3b)} ]
+```
 *(Where `a` is the semi-major axis (width extracted via MediaPipe coordinates) and `b` is the semi-minor axis (estimated anatomical width-to-depth ratio))*
 
 ---
