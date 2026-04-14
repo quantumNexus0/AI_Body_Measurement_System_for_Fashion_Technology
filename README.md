@@ -196,17 +196,17 @@ The system follows a sequential mathematical pipeline to transform raw RGB data 
 ```mermaid
 graph TD
     A[Photo Input] --> B{Calibration Engine}
-    B -->|Option A: CV| C[A4 Paper Detection]
-    B -->|Option B: Fallback| D[User Height Scaling]
+    B -->|Option A: CV| C["A4 Paper Detection"]
+    B -->|Option B: Fallback| D["User Height Scaling"]
     
-    C -->|Canny + Contour| E[px/cm Scale Factor]
+    C -->|Canny + Contour| E["px/cm Scale Factor"]
     D -->|Nose-to-Heel + 5%| E
     
     E --> F[MediaPipe Pose Inference]
     F -->|Model Complexity 2| G[33 Landmark Extraction]
     G --> H{Pose Validation}
     
-    H -->|Fail| I[Feedback: Step Back/Center]
+    H -->|Fail| I["Feedback: Step Back / Center"]
     H -->|Pass| J[Measurement Extraction]
     
     J --> K[Elliptical Body Modeling]
@@ -248,7 +248,7 @@ For a medical-grade AI Body Measurement system, the project is structured into *
 ## 🗂 Project structure
 
 ```
-├── python_backend/           # Microservice Backend
+├── python_backend/           # Microservice Backend (Python/FastAPI)
 │   ├── app.py                # Isolated Gradio UI testing sandbox
 │   ├── main.py               # Live FastAPI serving the algorithm
 │   ├── measure_engine.py     # Core OpenCV Extraction & Math execution
@@ -256,9 +256,15 @@ For a medical-grade AI Body Measurement system, the project is structured into *
 │   ├── calibration.py        # Object & Euclidean distance boundary scaling
 │   └── tests/                # pytest unit + integration tests
 ├── server/                   # API Gateway (Node.js/Express)
-│   ├── controllers/          # measureController routes traffic
-│   └── models/               # MongoDB models for persisting profiles
-├── src/                      # Frontend UI Application (React)
+│   ├── config/               # Database and Env configurations
+│   ├── controllers/          # measureController & business logic
+│   ├── middleware/           # Auth and security headers
+│   ├── models/               # MongoDB Mongoose schemas
+│   ├── routes/               # API endpoint definitions
+│   └── utils/                # seeding & helper functions
+├── src/                      # Frontend UI Application (React/Vite)
+│   ├── components/           # UI elements (Camera, Results, Recommendations)
+│   └── utils/                # Client-side pose-check & math help
 └── README.md
 ```
 
