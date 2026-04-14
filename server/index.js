@@ -9,6 +9,12 @@ const fs = require("fs").promises;
 const fsSync = require("fs");
 const crypto = require("crypto");
 
+const { validateEnv } = require("./config/env");
+
+// ── Validate critical environment configuration ──────────────────────────────
+// Throws and exits if JWT_SECRET is missing, weak, or default.
+const config = validateEnv();
+
 const connectDB = require("./config/db");
 const seedDatabase = require("./utils/seedDatabase");
 

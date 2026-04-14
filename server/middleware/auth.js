@@ -1,9 +1,20 @@
 const rateLimit = require('express-rate-limit');
+const { RedisStore } = require('rate-limit-redis');
+const { createClient } = require('redis');
 const { verifyToken } = require('../utils/jwt');
+
+// Initialize Redis client for distributed rate limiting
+const redisClient = createClient({ 
+  url: process.env.REDIS_URL || 'redis://localhost:6379' 
+});
+
+redisClient.connect().catch((err) => {
+  console.error('[auth] Redis Connection Error:', err.message);
+});
 
 /**
  * Rate limiter for CPU-intensive measurement requests.
- * Max 10 attempts per minute per IP.
+ * Uses Redis store for distributed application support.
  */
 const measureLimiter = rateLimit({
   windowMs: 60 * 1000, 
@@ -14,6 +25,13 @@ const measureLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.sendCommand(args),
+  }),
+  keyGenerator: (req) => {
+    // Rate limit per user if authed, otherwise per IP
+    return req.user?.id || req.ip;
+  }
 });
 
 /**

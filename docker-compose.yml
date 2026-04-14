@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # Main AI backend service (FastAPI)
+  python_backend:
+    build: 
+      context: ./python_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/bodyfit
+    depends_on:
+      - mongodb
+
+  # API Gateway (Node.js)
+  server:
+    build: 
+      context: ./server
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=development
+      - MONGO_URI=mongodb://mongodb:27017/bodyfit
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=bodyfit_ai_development_secret_32chars_long
+      - ALLOWED_ORIGINS=http://localhost:5173
+    depends_on:
+      - mongodb
+      - redis
+
+  # Database
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  # Shared cache for rate limiting
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  mongodb_data:
