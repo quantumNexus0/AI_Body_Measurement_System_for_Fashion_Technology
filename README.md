@@ -87,7 +87,11 @@ graph TD
     Node -->|Analytics| DB[(MongoDB Atlas)]
 ```
 
+### Why Python for Calculations?
 While Node.js handles the user authentication and database management, **Python is exclusively used as an independent sidecar for volumetric and anatomical calculations**. 
+*   **MediaPipe Integration**: MediaPipe is optimized for Python, offering superior bindings for real-time human pose estimation.
+*   **Numerical Precision**: Python's `NumPy` and mathematical libraries allow for the implementation of complex algorithms like the **Ramanujan Elliptical Approximation** with floating-point precision that exceeds standard JavaScript capabilities.
+*   **Computer Vision**: OpenCV's Python wrapper is the industry standard for high-performance edge detection and perspective transformation.
 
 ### ⚡ Sub-Second Inference
 Unlike traditional AI scripts that reload models on every run, our Python engine uses an **Async Lifespan Context**. Neural network weights for **MoveNet** and **MiDaS** are pre-loaded into memory at startup. This reduces subsequent request latency from ~5.0s to **<600ms**.
