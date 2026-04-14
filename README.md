@@ -189,54 +189,40 @@ gradio>=4.0.0
 
 ---
 
-## 📸 How to take a good photo
+## 🔬 How it works (Processing Pipeline)
 
-For best accuracy follow these guidelines:
+The system follows a sequential mathematical pipeline to transform raw RGB data into anthropometric measurements.
 
-- ✅ Stand **1.5m+ from the camera**
-- ✅ Full body visible **head to feet**
-- ✅ Wear **form-fitting clothes** (avoid baggy)
-- ✅ Stand against a **plain, contrasting background**
-- ✅ Camera at **body height**, not angled up or down
-- ✅ Hold an **A4 sheet of paper** for automatic scale calibration
-- ✅ Arms slightly away from body (**A-pose**)
-
----
-
-## 🔬 How it works
-
-```
-Photo input
-    │
-    ▼
-A4 paper detection (calibration.py)
-    │  Detects white rectangle via Canny + contour analysis
-    │  Derives px/cm scale from known A4 dimensions (21×29.7 cm)
-    │  Falls back to user-provided height if A4 not found
-    ▼
-MediaPipe Pose (33 landmarks)
-    │  model_complexity=2 for maximum accuracy
-    │  Pose quality validation (visibility, tilt, frame coverage)
-    ▼
-Measurement extraction
-    │  Landmark-to-pixel distances converted to cm via scale factor
-    │  Elliptical body model for circumference estimation
-    ▼
-Size recommendation
-    │  Maps measurements to XS/S/M/L/XL/XXL tables
-    ▼
-Annotated image + JSON output
+```mermaid
+graph TD
+    A[Photo Input] --> B{Calibration Engine}
+    B -->|Option A: CV| C[A4 Paper Detection]
+    B -->|Option B: Fallback| D[User Height Scaling]
+    
+    C -->|Canny + Contour| E[px/cm Scale Factor]
+    D -->|Nose-to-Heel + 5%| E
+    
+    E --> F[MediaPipe Pose Inference]
+    F -->|Model Complexity 2| G[33 Landmark Extraction]
+    G --> H{Pose Validation}
+    
+    H -->|Fail| I[Feedback: Step Back/Center]
+    H -->|Pass| J[Measurement Extraction]
+    
+    J --> K[Elliptical Body Modeling]
+    K -->|Ramanujan Perimeter Approx| L[Final Anatomical JSON]
+    L --> M[Size Recommendation Engine]
+    M --> N[Annotated Image + Report]
 ```
 
-### Elliptical body model
+### 🧬 Project Structural Analysis
 
-Circumference measurements (chest, waist, hips) are estimated as:
+For a medical-grade AI Body Measurement system, the project is structured into **Modular Core Services** to ensure scalability and isolation of concerns:
 
-```
-circumference ≈ visible_width × π
-```
-
-This assumes a roughly elliptical cross-section where the depth ≈ width (simplification). Error is typically ±3–5 cm versus a tape measure for average body shapes.
+1.  **Ingestion Service (`server/`)**: Acts as the high-throughput Node.js Gateway. Its primary role is to handle multipart image traffic, provide rate-limiting security, and maintain the MongoDB persistence layer for user measurement history.
+2.  **Inference Engine (`python_backend/`)**: A dedicated FastAPI microservice that encapsulates the heavy-compute requirements. It separates **Spatial Calibration (`calibration.py`)** from **Pose Extraction (`measure_engine.py`)** to allow for independent scaling of CV algorithms.
+3.  **Real-Time Feedback Layer (`src/`)**: A client-side TensorFlow.js implementation that performs "pre-flight" posture checks. This ensures that only high-quality, valid images are sent to the server, significantly reducing GPU/CPU waste on the backend.
+4.  **Math & Geometry Core**: Replaces standard bounding-box logic with **Biomodeling**. By treating the human torso as a collection of stacked ellipses, the system accounts for body depth that 2D cameras typically lose, calculating volumes instead of simple widths.
 
 ---
 
