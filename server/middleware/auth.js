@@ -42,8 +42,10 @@ const measureLimiter = rateLimit({
   store: (process.env.REDIS_URL && useRedis) ? new RedisStore({
     sendCommand: (...args) => redisClient.sendCommand(args),
   }) : undefined,
-  keyGenerator: (req) => {
-    return req.user?.id || req.ip;
+  keyGenerator: (req, res) => {
+    return req.headers['x-forwarded-for']?.split(',')[0].trim()
+      || req.socket?.remoteAddress
+      || req.ip;
   },
   validate: { xForwardedForHeader: false },
 });

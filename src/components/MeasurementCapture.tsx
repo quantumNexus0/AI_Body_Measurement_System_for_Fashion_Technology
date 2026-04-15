@@ -11,7 +11,7 @@ import CalibrationModal from './CalibrationModal';
 import ClothingRecommendations from './ClothingRecommendations';
 import ProgressTracking from './ProgressTracking';
 import ExportOptions from './ExportOptions';
-import MeasurementProcessor from '../utils/MeasurementProcessor';
+import MeasurementProcessor, { getIndianSizes } from '../utils/MeasurementProcessor';
 
 interface CalibrationData {
   type: 'height' | 'reference';
@@ -30,6 +30,7 @@ interface Measurements {
   leg_length: string;
   inseam: string;
   neck: string;
+  warnings?: string[];
 }
 
 type CaptureMethod = 'camera' | 'upload' | '3d' | 'multipose';
@@ -278,6 +279,34 @@ const MeasurementCapture: React.FC = () => {
               <MeasurementItem label="Neck Circumference" value={measurements.neck} />
             </div>
           </div>
+
+          {(() => {
+            const sizes = getIndianSizes(measurements as any);
+            return (
+              <div className="mt-8 p-6 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+                <h4 className="text-lg font-semibold text-indigo-900 mb-4 flex items-center">
+                  <span className="bg-indigo-100 p-1.5 rounded-lg mr-2">
+                    <User className="w-5 h-5 text-indigo-600" />
+                  </span>
+                  Recommended Indian Sizes
+                </h4>
+                <div className="grid grid-cols-3 gap-3 md:gap-4">
+                  <div className="bg-white p-4 rounded-xl text-center shadow-sm border border-indigo-50">
+                    <div className="text-xs sm:text-sm text-gray-500 mb-1">Top Size</div>
+                    <div className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-indigo-600">{sizes.top}</div>
+                  </div>
+                  <div className="bg-white p-4 rounded-xl text-center shadow-sm border border-indigo-50">
+                    <div className="text-xs sm:text-sm text-gray-500 mb-1">Bottom Size</div>
+                    <div className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-indigo-600">{sizes.bottom}</div>
+                  </div>
+                  <div className="bg-white p-4 rounded-xl text-center shadow-sm border border-indigo-50">
+                    <div className="text-xs sm:text-sm text-gray-500 mb-1">Ethnic Wear</div>
+                    <div className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-indigo-600">{sizes.ethnic}</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="mt-10 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 justify-end">
             <button

@@ -11,19 +11,9 @@ from auth import verify_internal_token
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-engine: MeasurementEngine | None = None
+engine = MeasurementEngine()
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    global engine
-    logger.info("Loading MoveNet + MiDaS models...")
-    engine = MeasurementEngine()
-    await engine.load_models()
-    logger.info("Models ready.")
-    yield
-    engine = None
-
-app = FastAPI(title="BodyFit Measurement Engine", lifespan=lifespan)
+app = FastAPI(title="BodyFit Measurement Engine")
 
 app.add_middleware(CORSMiddleware,
     allow_origins=[os.getenv("NODE_ORIGIN", "http://localhost:3001")],

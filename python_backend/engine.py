@@ -33,18 +33,17 @@ class MeasurementEngine:
         self._midas   = None
         self._midas_transform = None
 
-    async def load_models(self):
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, self._load_sync)
+    def _get_movenet(self):
+        if self._movenet is None:
+            self._movenet = hub.load(MOVENET_URL).signatures["serving_default"]
+        return self._movenet
 
-    def _load_sync(self):
-        # Load MoveNet from TF Hub
-        self._movenet = hub.load(MOVENET_URL).signatures["serving_default"]
-        
-        # Load MiDaS from Torch Hub
-        self._midas = torch.hub.load("intel-isl/MiDaS", "MiDaS_small", pretrained=True).eval()
-        transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
-        self._midas_transform = transforms.small_transform
+    def _get_midas(self):
+        if self._midas is None:
+            self._midas = torch.hub.load("intel-isl/MiDaS", "MiDaS_small", pretrained=True).eval()
+            transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
+            self._midas_transform = transforms.small_transform
+        return self._midas, self._midas_transform
 
     async def process(self, raw_bytes: bytes,
                       calib_type: str, calib_value: float,
@@ -81,9 +80,10 @@ class MeasurementEngine:
         return self._extract_results(img_rgb, kps, depth_map, px_per_mm, gender)
 
     def _run_movenet(self, img_rgb: np.ndarray):
+        movenet_model = self._get_movenet()
         resized  = tf.image.resize_with_pad(tf.expand_dims(img_rgb, 0), 256, 256)
         inp      = tf.cast(resized, tf.int32)
-        outputs  = self._movenet(input=inp)
+        outputs  = movenet_model(input=inp)
         raw_kps  = outputs["output_0"].numpy()[0, 0]
         h, w     = img_rgb.shape[:2]
         kps = {name: {"y": float(raw_kps[idx, 0]) * h,
@@ -94,9 +94,10 @@ class MeasurementEngine:
         return kps, quality
 
     def _run_midas(self, img_rgb: np.ndarray) -> np.ndarray:
-        inp = self._midas_transform(img_rgb).unsqueeze(0)
+        midas_model, midas_transform = self._get_midas()
+        inp = midas_transform(img_rgb).unsqueeze(0)
         with torch.no_grad():
-            depth = self._midas(inp).squeeze().numpy()
+            depth = midas_model(inp).squeeze().numpy()
         depth = cv2.resize(depth, (img_rgb.shape[1], img_rgb.shape[0]), interpolation=cv2.INTER_CUBIC)
         return depth.astype(np.float32)
 
