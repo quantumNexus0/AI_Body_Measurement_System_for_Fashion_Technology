@@ -1,124 +1,107 @@
-import io
+# measure_v2.py — rewritten for mediapipe >= 0.10.14 (Tasks API)
+import cv2
 import math
-import uuid
 import numpy as np
-from fastapi import FastAPI, File, UploadFile, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from PIL import Image
 import mediapipe as mp
-from pydantic import BaseModel
-from typing import Optional
+from mediapipe.tasks import python
+from mediapipe.tasks.python import vision
+from mediapipe.tasks.python.vision import PoseLandmarker
 
-# ── MediaPipe Setup ──────────────────────────────────────────────────────────
-mp_pose = mp.solutions.pose
+# Download model once:
+# curl -o pose_landmarker_full.task \
+#   https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task
 
-class CalibrationData(BaseModel):
-    type: str  # 'height' or 'reference'
-    value: float
-    unit: str  # 'cm' or 'inches'
+MODEL_PATH = "pose_landmarker_full.task"
 
-def px_dist(a, b, img_w, img_h):
-    """Euclidean distance between normalized landmarks in pixel space."""
-    return math.sqrt(((a.x - b.x) * img_w) ** 2 + ((a.y - b.y) * img_h) ** 2)
+def get_landmarker():
+    base_options = python.BaseOptions(model_asset_path=MODEL_PATH)
+    options = vision.PoseLandmarkerOptions(
+        base_options=base_options,
+        output_segmentation_masks=False
+    )
+    return vision.PoseLandmarker.create_from_options(options)
 
-def ellipse_circumference(width_cm: float, depth_ratio: float = 0.72) -> float:
-    """Ramanujan approximation for ellipse circumference."""
-    a = width_cm / 2
-    b = a * depth_ratio
-    h = ((a - b) ** 2) / ((a + b) ** 2)
-    return math.pi * (a + b) * (1 + (3 * h) / (10 + math.sqrt(4 - 3 * h)))
+def process_measurements(image_path: str, calibration: dict) -> dict:
+    """
+    Returns 8 body measurements in cm given an image and calibration data.
+    calibration = {"type": "height", "value": 170, "unit": "cm"}
+    """
+    landmarker = get_landmarker()
+    img_bgr = cv2.imread(image_path)
+    if img_bgr is None:
+        raise ValueError(f"Cannot read image: {image_path}")
+    h, w = img_bgr.shape[:2]
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=img_rgb)
 
-async def process_measurements(
-    contents: bytes,
-    height_cm: float = 170.0,
-    unit: str = "cm",
-):
-    pil_img = Image.open(io.BytesIO(contents)).convert("RGB")
-    img_w, img_h = pil_img.size
-    img_np = np.array(pil_img)
+    result = landmarker.detect(mp_image)
+    if not result.pose_landmarks:
+        raise RuntimeError("No pose detected — ensure full body is visible")
 
-    if unit == "inches":
-        height_cm = height_cm * 2.54
+    lm = result.pose_landmarks[0]
 
-    with mp_pose.Pose(
-        static_image_mode=True,
-        model_complexity=2,
-        enable_segmentation=False,
-        min_detection_confidence=0.5,
-    ) as pose:
-        results = pose.process(img_np)
+    def pt(idx):
+        p = lm[idx]
+        return np.array([p.x * w, p.y * h])
 
-    if not results.pose_landmarks:
-        raise ValueError("No person detected in image. Ensure full body is visible.")
+    # Keypoint indices (MediaPipe Pose 33-point model)
+    # 11=L_shoulder, 12=R_shoulder, 23=L_hip, 24=R_hip
+    # 25=L_knee, 26=R_knee, 27=L_ankle, 28=R_ankle
+    # 13=L_elbow, 14=R_elbow, 15=L_wrist, 16=R_wrist
+    # 7=L_ear, 8=R_ear (proxy for neck width)
+    # 0=nose
 
-    lm = results.pose_landmarks.landmark
+    L_SHOULDER, R_SHOULDER = pt(11), pt(12)
+    L_HIP, R_HIP = pt(23), pt(24)
+    L_KNEE, R_KNEE = pt(25), pt(26)
+    L_ANKLE, R_ANKLE = pt(27), pt(28)
+    L_ELBOW, R_ELBOW = pt(13), pt(14)
+    L_WRIST, R_WRIST = pt(15), pt(16)
+    NOSE = pt(0)
 
-    # Compute pixels-per-cm from detected body height vs known height
-    nose_y = lm[mp_pose.PoseLandmark.NOSE].y * img_h
-    left_ankle_y = lm[mp_pose.PoseLandmark.LEFT_ANKLE].y * img_h
-    right_ankle_y = lm[mp_pose.PoseLandmark.RIGHT_ANKLE].y * img_h
-    foot_y = max(left_ankle_y, right_ankle_y)
-    body_height_px = foot_y - nose_y
-    
-    # 0.93 = head-to-ankle / full height ratio
-    pixels_per_cm = body_height_px / (height_cm * 0.93)
+    def dist(a, b):
+        return float(np.linalg.norm(a - b))
 
-    def to_cm(px): return round(px / pixels_per_cm, 1)
+    # Pixel measurements
+    px_shoulder_w   = dist(L_SHOULDER, R_SHOULDER)
+    px_body_height  = dist(NOSE, (L_ANKLE + R_ANKLE) / 2)
+    px_hip_w        = dist(L_HIP, R_HIP)
+    px_arm_L        = dist(L_SHOULDER, L_ELBOW) + dist(L_ELBOW, L_WRIST)
+    px_leg_L        = dist(L_HIP, L_KNEE) + dist(L_KNEE, L_ANKLE)
+    px_inseam       = dist((L_HIP + R_HIP) / 2, (L_ANKLE + R_ANKLE) / 2)
+    px_neck_w       = px_shoulder_w * 0.28   # heuristic
 
-    # 1. Shoulder width
-    ls = lm[mp_pose.PoseLandmark.LEFT_SHOULDER]
-    rs = lm[mp_pose.PoseLandmark.RIGHT_SHOULDER]
-    shoulder_px = px_dist(ls, rs, img_w, img_h)
-    shoulder_cm = to_cm(shoulder_px)
+    # Calibration: pixels-per-cm
+    cal_type = calibration.get("type", "height")
+    cal_value = float(calibration.get("value", 170))
+    cal_unit = calibration.get("unit", "cm")
+    if cal_unit == "inches":
+        cal_value *= 2.54
+    # cal_value is now in cm
 
-    # 2. Hip width
-    lh = lm[mp_pose.PoseLandmark.LEFT_HIP]
-    rh = lm[mp_pose.PoseLandmark.RIGHT_HIP]
-    hip_px = px_dist(lh, rh, img_w, img_h)
-    hip_cm = to_cm(hip_px)
+    if cal_type == "height":
+        px_per_cm = px_body_height / cal_value
+    else:
+        # reference object: cal_value = known width in cm, use shoulder as reference
+        px_per_cm = px_shoulder_w / cal_value
 
-    # 3. Arm length (shoulder -> elbow -> wrist)
-    le = lm[mp_pose.PoseLandmark.LEFT_ELBOW]
-    lw = lm[mp_pose.PoseLandmark.LEFT_WRIST]
-    re = lm[mp_pose.PoseLandmark.RIGHT_ELBOW]
-    rw = lm[mp_pose.PoseLandmark.RIGHT_WRIST]
-    left_arm_px = px_dist(ls, le, img_w, img_h) + px_dist(le, lw, img_w, img_h)
-    right_arm_px = px_dist(rs, re, img_w, img_h) + px_dist(re, rw, img_w, img_h)
-    arm_cm = to_cm((left_arm_px + right_arm_px) / 2)
+    def to_cm(px):
+        return round(px / px_per_cm, 1)
 
-    # 4. Leg length (hip -> knee -> ankle)
-    lk = lm[mp_pose.PoseLandmark.LEFT_KNEE]
-    la = lm[mp_pose.PoseLandmark.LEFT_ANKLE]
-    rk = lm[mp_pose.PoseLandmark.RIGHT_KNEE]
-    ra = lm[mp_pose.PoseLandmark.RIGHT_ANKLE]
-    left_leg_px = px_dist(lh, lk, img_w, img_h) + px_dist(lk, la, img_w, img_h)
-    right_leg_px = px_dist(rh, rk, img_w, img_h) + px_dist(rk, ra, img_w, img_h)
-    leg_cm = to_cm((left_leg_px + right_leg_px) / 2)
-
-    # 5. Derived measurements
-    chest_cm = round(ellipse_circumference(shoulder_cm * 1.15), 1)
-    waist_cm = round(ellipse_circumference(shoulder_cm * 0.72), 1)
-    hip_circ_cm = round(ellipse_circumference(hip_cm * 1.05), 1)
-    inseam_cm = round(leg_cm * 0.88, 1)
-    neck_cm = round(ellipse_circumference(shoulder_cm * 0.38, 0.85), 1)
-
-    # Confidence scores
-    key_landmarks = [ls, rs, lh, rh, lk, rk, la, ra]
-    avg_visibility = sum(l.visibility for l in key_landmarks) / len(key_landmarks)
+    def circumference(width_px, depth_ratio=0.65):
+        # Ellipse perimeter approx: π * (3(a+b) - sqrt((3a+b)(a+3b)))
+        a = (width_px / px_per_cm) / 2
+        b = a * depth_ratio
+        h_val = ((a - b) ** 2) / ((a + b) ** 2)
+        return round(math.pi * (3*(a+b) - math.sqrt((3*a+b)*(a+3*b))), 1)
 
     return {
-        "session_id": str(uuid.uuid4()),
-        "measurements": {
-            "shoulder_width": {"value": shoulder_cm, "unit": "cm"},
-            "chest": {"value": chest_cm, "unit": "cm"},
-            "waist": {"value": waist_cm, "unit": "cm"},
-            "hips": {"value": hip_circ_cm, "unit": "cm"},
-            "arm_length": {"value": arm_cm, "unit": "cm"},
-            "leg_length": {"value": leg_cm, "unit": "cm"},
-            "inseam": {"value": inseam_cm, "unit": "cm"},
-            "neck": {"value": neck_cm, "unit": "cm"},
-        },
-        "pixels_per_cm": round(pixels_per_cm, 2),
-        "overall_confidence": round(avg_visibility * 100, 1),
-        "model": "mediapipe-blazepose-heavy",
+        "shoulder_width": f"{to_cm(px_shoulder_w)} cm",
+        "chest":          f"{circumference(px_shoulder_w * 1.1)} cm",
+        "waist":          f"{circumference(px_hip_w * 0.82)} cm",
+        "hips":           f"{circumference(px_hip_w)} cm",
+        "arm_length":     f"{to_cm(px_arm_L)} cm",
+        "leg_length":     f"{to_cm(px_leg_L)} cm",
+        "inseam":         f"{to_cm(px_inseam)} cm",
+        "neck":           f"{circumference(px_neck_w, depth_ratio=0.75)} cm",
     }

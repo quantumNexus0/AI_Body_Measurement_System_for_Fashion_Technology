@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# MediaPipe model files (large binary, download separately)
+*.task
+
 # Python
 __pycache__/
 *.py[cod]
