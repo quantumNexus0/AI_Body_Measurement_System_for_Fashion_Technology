@@ -6,39 +6,58 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    restart: always
 
-  # AI engine running as an independent sidecar
-  python_sidecar:
-    build: ./python_backend
+  # MongoDB for persistent data
+  mongodb:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: always
+
+  # AI engine (MediaPipe BlazePose)
+  python-backend:
+    build: 
+      context: ./python_backend
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     environment:
-      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
-      - NODE_ORIGIN=http://localhost:3001
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN:-local-dev-token}
+      - NODE_ORIGIN=http://node-gateway:3001
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
+      interval: 15s
       timeout: 5s
-      retries: 5
+      retries: 3
+    restart: always
 
-  # Express Gateway
-  node_gateway:
-    build: ./server
+  # Express Gateway (V2)
+  node-gateway:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
     ports:
       - "3001:3001"
     depends_on:
-      python_sidecar:
+      python-backend:
         condition: service_healthy
       redis:
         condition: service_started
+      mongodb:
+        condition: service_started
     environment:
       - PORT=3001
-      - NODE_ENV=development
-      - JWT_SECRET=${JWT_SECRET}
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/bodyfit
       - REDIS_URL=redis://redis:6379
-      - PYTHON_SIDECAR_URL=http://python_sidecar:8000
-      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
+      - PYTHON_SERVICE_URL=http://python-backend:8000
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN:-local-dev-token}
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-prod}
       - ALLOWED_ORIGINS=http://localhost:5173
+    restart: always
 
   # React Frontend (Vite)
   frontend:
@@ -46,9 +65,10 @@ services:
     ports:
       - "5173:5173"
     depends_on:
-      - node_gateway
+      - node-gateway
     environment:
       - VITE_API_URL=http://localhost:3001
+    restart: always
 
 volumes:
   mongodb_data:

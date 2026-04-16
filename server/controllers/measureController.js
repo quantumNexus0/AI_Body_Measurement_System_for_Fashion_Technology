@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const sharp = require('sharp');
 const Measurement = require('../models/Measurement');
+const axios = require('axios');
 
 exports.processMeasurement = async (req, res) => {
   try {
@@ -185,6 +186,82 @@ exports.getRecommendations = async (req, res) => {
   } catch (error) {
     console.error('Recommendation Error:', error);
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.processMeasurementV2 = async (req, res) => {
+  const start = Date.now();
+  try {
+    const calibrationRaw = JSON.parse(req.body.calibrationData ?? '{}');
+    if (!req.file) return res.status(400).json({ success: false, error: 'No image provided' });
+
+    // Process image with Sharp
+    const imageBuffer = await sharp(req.file.buffer)
+      .resize({ width: 800, withoutEnlargement: true })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+
+    // Node.js 18+ has built-in FormData
+    const formData = new FormData();
+    const blob = new Blob([imageBuffer], { type: 'image/jpeg' });
+    formData.append('image', blob, 'upload.jpg');
+    formData.append('height_cm', calibrationRaw.value || 170);
+    formData.append('unit', calibrationRaw.unit || 'cm');
+
+    const pythonUrl = `${process.env.PYTHON_SERVICE_URL || 'http://localhost:8000'}/api/v2/measure`;
+    
+    const pyResponse = await axios.post(pythonUrl, formData, {
+        headers: {
+            'x-internal-token': process.env.INTERNAL_TOKEN || 'local-dev-token'
+        }
+    });
+
+    const pyData = pyResponse.data;
+
+    // Save transient measurement to MongoDB
+    const doc = new Measurement({
+      session_id: pyData.session_id,
+      measurements: pyData.measurements,
+      calibration: calibrationRaw,
+      confidence: pyData.overall_confidence / 100,
+      notes: req.body.notes
+    });
+    await doc.save();
+
+    res.json({
+      success: true,
+      ...pyData,
+      processingMs: Date.now() - start,
+    });
+  } catch (err) {
+    console.error('V2 Measurement error:', err.message);
+    res.status(500).json({ success: false, error: 'Processing failed: ' + err.message });
+  }
+};
+
+exports.getRecommendationsV2 = async (req, res) => {
+  try {
+    const { measurements, brand, garment_type } = req.body;
+    
+    if (!measurements) {
+      return res.status(400).json({ success: false, error: 'Measurements are required' });
+    }
+
+    const pythonUrl = `${process.env.PYTHON_SERVICE_URL || 'http://localhost:8000'}/api/v2/recommend`;
+    const pyResponse = await axios.post(pythonUrl, {
+        measurements,
+        brand: brand || 'standard',
+        garment_type: garment_type || 'top'
+    }, {
+        headers: {
+            'x-internal-token': process.env.INTERNAL_TOKEN || 'local-dev-token'
+        }
+    });
+
+    res.json({ success: true, ...pyResponse.data });
+  } catch (err) {
+    console.error('V2 Recommendation Error:', err.message);
+    res.status(500).json({ success: false, error: 'Recommendation failed: ' + err.message });
   }
 };
 

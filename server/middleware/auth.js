@@ -3,16 +3,22 @@ const { RedisStore } = require('rate-limit-redis');
 const { createClient } = require('redis');
 const { verifyToken } = require('../utils/jwt');
 
-// Initialize Redis client for distributed rate limiting
-const redisClient = createClient({ 
-  url: process.env.REDIS_URL || 'redis://localhost:6379' 
+// ✅ Create Redis client
+const redisClient = createClient({
+  url: process.env.REDIS_URL || 'redis://localhost:6379'
 });
 
 let useRedis = false;
 
+// ✅ Redis event handling (log only once to avoid spam)
+let redisConnected = false;
 redisClient.on('error', (err) => {
-  if (useRedis) console.warn('[auth] Redis lost connection:', err.message);
+  if (redisConnected || !useRedis) {
+    // Only warn if we were previously connected or it's the first time
+    if (useRedis) console.warn('[auth] Redis connection lost:', err.message);
+  }
   useRedis = false;
+  redisConnected = false;
 });
 
 redisClient.on('connect', () => {
@@ -20,46 +26,56 @@ redisClient.on('connect', () => {
   useRedis = true;
 });
 
-redisClient.connect().catch((err) => {
-  console.warn('[auth] Redis unavailable, falling back to in-memory rate limiting.');
-  useRedis = false;
-});
+// ✅ Connect Redis
+(async () => {
+  try {
+    await redisClient.connect();
+    useRedis = true;
+  } catch (err) {
+    console.warn('[auth] Redis unavailable, using memory store.');
+    useRedis = false;
+  }
+})();
 
 /**
- * Rate limiter for CPU-intensive measurement requests.
- * Uses Redis store if available, falls back to in-memory if disconnected.
+ * ✅ Rate limiter for measurement API
  */
 const measureLimiter = rateLimit({
-  windowMs: 60 * 1000, 
+  windowMs: 60 * 1000, // 1 minute
   max: 10,
-  message: { 
+  message: {
     success: false,
-    error: 'Too many measurement requests. Please wait a minute.' 
+    error: 'Too many measurement requests. Please wait a minute.'
   },
   standardHeaders: true,
   legacyHeaders: false,
-  // Fallback to memory if Redis is not explicitly needed or fails
-  store: (process.env.REDIS_URL && useRedis) ? new RedisStore({
-    sendCommand: (...args) => redisClient.sendCommand(args),
-  }) : undefined,
-  keyGenerator: (req, res) => {
-    return req.headers['x-forwarded-for']?.split(',')[0].trim()
-      || req.socket?.remoteAddress
-      || req.ip;
-  },
-  validate: { xForwardedForHeader: false },
+
+  // ✅ Use Redis only if available
+  store: useRedis
+    ? new RedisStore({
+        sendCommand: (...args) => redisClient.sendCommand(args),
+      })
+    : undefined
 });
 
 /**
- * Middleware to ensure request has a valid JWT token.
+ * ✅ General API limiter (optional)
  */
-const requireAuth = async (req, res, next) => {
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100
+});
+
+/**
+ * ✅ JWT Authentication Middleware
+ */
+const requireAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ 
+    return res.status(401).json({
       success: false,
-      error: 'Authentication required. Missing Bearer token.' 
+      error: 'Authentication required. Missing Bearer token.'
     });
   }
 
@@ -70,14 +86,15 @@ const requireAuth = async (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(401).json({ 
+    return res.status(401).json({
       success: false,
-      error: 'Invalid or expired authentication token.' 
+      error: 'Invalid or expired authentication token.'
     });
   }
 };
 
 module.exports = {
   measureLimiter,
+  apiLimiter,
   requireAuth
 };

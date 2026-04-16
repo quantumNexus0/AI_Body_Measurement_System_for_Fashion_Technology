@@ -1,31 +1,45 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
-const userSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    // Adding optional fields for progress/recommendation use cases
-    gender: {
-      type: String,
-      enum: ['male', 'female', 'other'],
-    },
-    height: {
-      value: Number,
-      unit: { type: String, enum: ['cm', 'in'] }
-    },
-    weight: {
-      value: Number,
-      unit: { type: String, enum: ['kg', 'lbs'] }
-    }
+const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true
   },
-  { timestamps: true }
-);
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true
+  },
+  password: {
+    type: String,
+    required: true,
+    minlength: 8
+  },
+  measurements: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Measurement'
+  }],
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+// Hash password before saving
+userSchema.pre('save', async function(next) {
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  next();
+});
+
+// Method to compare passwords
+userSchema.methods.comparePassword = async function(password) {
+  return await bcrypt.compare(password, this.password);
+};
 
 module.exports = mongoose.model('User', userSchema);

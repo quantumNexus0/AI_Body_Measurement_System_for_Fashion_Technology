@@ -2,14 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { Shirt, Package, TrendingUp, Star, ShoppingBag, Filter, X, Check, Info } from 'lucide-react';
 
 interface Measurements {
-  shoulder_width: string;
-  chest: string;
-  waist: string;
-  hips: string;
-  arm_length: string;
-  leg_length: string;
-  inseam: string;
-  neck: string;
+  shoulder_width: { value: number; unit: string };
+  chest: { value: number; unit: string };
+  waist: { value: number; unit: string };
+  hips: { value: number; unit: string };
+  arm_length: { value: number; unit: string };
+  leg_length: { value: number; unit: string };
+  inseam: { value: number; unit: string };
+  neck: { value: number; unit: string };
+}
+
+interface SizeRecommendation {
+  primary_size: string;
+  alternative_size: string;
+  fit_notes: string;
+  specific_recommendations: string[];
+  size_chart: Record<string, string>;
+  confidence: number;
 }
 
 interface ClothingRecommendationsProps {
@@ -34,10 +43,12 @@ interface ClothingItem {
 
 const ClothingRecommendations: React.FC<ClothingRecommendationsProps> = ({ measurements }) => {
   const [recommendations, setRecommendations] = useState<ClothingItem[]>([]);
+  const [aiSize, setAiSize] = useState<SizeRecommendation | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedFit, setSelectedFit] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
+  const [brand, setBrand] = useState<string>('standard');
 
   const categories = [
     { id: 'all', name: 'All Items', icon: Package },
@@ -61,19 +72,31 @@ const ClothingRecommendations: React.FC<ClothingRecommendationsProps> = ({ measu
   const generateRecommendations = async () => {
     setLoading(true);
     try {
+      // 1. Get Precision AI Size Recommendation
+      const aiResponse = await fetch('http://localhost:3001/api/v2/recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          measurements, 
+          brand, 
+          garment_type: selectedCategory === 'all' ? 'top' : selectedCategory 
+        })
+      });
+      const aiData = await aiResponse.json();
+      if (aiData.success) {
+        setAiSize(aiData);
+      }
+
+      // 2. Get Marketplace items (Mock or real V1 endpoint for now)
       const response = await fetch('http://localhost:3001/api/v1/recommendations', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ measurements })
       });
       
       const result = await response.json();
       if (result.success) {
         setRecommendations(result.data);
-      } else {
-        console.error('Failed to generate recommendations:', result.message);
       }
     } catch (error) {
       console.error('Network error fetching recommendations:', error);
@@ -105,9 +128,66 @@ const ClothingRecommendations: React.FC<ClothingRecommendationsProps> = ({ measu
   return (
     <div className="relative">
       <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
-        <div className="flex items-center space-x-3 mb-4 sm:mb-6">
-          <ShoppingBag className="w-8 h-8 text-teal-600" />
-          <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Clothing Recommendations</h3>
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex items-center space-x-3">
+            <ShoppingBag className="w-8 h-8 text-teal-600" />
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Precision AI Size Recommendations</h3>
+          </div>
+          {aiSize && (
+            <div className="bg-teal-50 px-4 py-2 rounded-2xl border border-teal-100 flex items-center space-x-2">
+                <TrendingUp className="w-4 h-4 text-teal-500" />
+                <span className="text-sm font-bold text-teal-700">{Math.round(aiSize.confidence * 100)}% Confidence</span>
+            </div>
+          )}
+        </div>
+
+        {/* V2 Precision AI Results Card */}
+        {aiSize && (
+            <div className="bg-gradient-to-br from-indigo-600 to-teal-600 rounded-3xl p-6 sm:p-8 text-white mb-10 shadow-xl shadow-indigo-100 relative overflow-hidden">
+                <div className="relative z-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-widest text-indigo-100 mb-2">Recommended Primary Size</p>
+                            <h2 className="text-6xl font-black mb-4">{aiSize.primary_size}</h2>
+                            <div className="inline-flex items-center space-x-2 bg-white/20 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md mb-6">
+                                <span>Alternative: {aiSize.alternative_size}</span>
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <h4 className="font-bold flex items-center space-x-2">
+                                    <Check className="w-4 h-4" />
+                                    <span>Fit Notes</span>
+                                </h4>
+                                <p className="text-sm text-indigo-50 leading-relaxed font-medium">
+                                    {aiSize.fit_notes}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+                            <h4 className="font-bold text-sm uppercase tracking-widest mb-4 text-center">Specific Style Advice</h4>
+                            <ul className="space-y-4">
+                                {aiSize.specific_recommendations.map((rec, i) => (
+                                    <li key={i} className="flex items-start space-x-3">
+                                        <div className="bg-white/20 p-1.5 rounded-lg mt-0.5">
+                                            <Star className="w-3 h-3 fill-current" />
+                                        </div>
+                                        <span className="text-sm font-medium">{rec}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {/* Decorative Elements */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-400/10 rounded-full -ml-32 -mb-32 blur-3xl"></div>
+            </div>
+        )}
+
+        <div className="flex items-center space-x-3 mb-6">
+            <Filter className="w-5 h-5 text-gray-400" />
+            <h4 className="font-bold text-gray-900 uppercase tracking-widest text-xs">Marketplace Catalog</h4>
         </div>
 
         {/* Filters */}
@@ -216,19 +296,19 @@ const ClothingRecommendations: React.FC<ClothingRecommendationsProps> = ({ measu
             <div>
               <h5 className="font-medium text-gray-800 mb-2">Shirts & Jackets</h5>
               <ul className="space-y-1 text-gray-600">
-                <li>Chest: {measurements.chest}</li>
-                <li>Shoulder: {measurements.shoulder_width}</li>
-                <li>Neck: {measurements.neck}</li>
-                <li>Arm Length: {measurements.arm_length}</li>
+                <li>Chest: {measurements.chest.value} {measurements.chest.unit}</li>
+                <li>Shoulder: {measurements.shoulder_width.value} {measurements.shoulder_width.unit}</li>
+                <li>Neck: {measurements.neck.value} {measurements.neck.unit}</li>
+                <li>Arm Length: {measurements.arm_length.value} {measurements.arm_length.unit}</li>
               </ul>
             </div>
             <div>
               <h5 className="font-medium text-gray-800 mb-2">Pants</h5>
               <ul className="space-y-1 text-gray-600">
-                <li>Waist: {measurements.waist}</li>
-                <li>Hips: {measurements.hips}</li>
-                <li>Inseam: {measurements.inseam}</li>
-                <li>Leg Length: {measurements.leg_length}</li>
+                <li>Waist: {measurements.waist.value} {measurements.waist.unit}</li>
+                <li>Hips: {measurements.hips.value} {measurements.hips.unit}</li>
+                <li>Inseam: {measurements.inseam.value} {measurements.inseam.unit}</li>
+                <li>Leg Length: {measurements.leg_length.value} {measurements.leg_length.unit}</li>
               </ul>
             </div>
           </div>

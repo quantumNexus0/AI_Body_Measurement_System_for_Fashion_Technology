@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run python\" \"npm run server\" \"vite\"",
-    "server": "cd server && node index.js",
+    "server": "cd server && node index-v2.js",
     "python": "cd python_backend && ..\\.venv\\Scripts\\uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
     "build": "vite build",
     "lint": "eslint .",
